@@ -18,3 +18,6 @@ msort [x] = [x]
 
 msort xs = merge (msort lh) (msort rh)
     where (lh, rh) = halves xs
+
+
+a = msort [1,4,5,3,2]
