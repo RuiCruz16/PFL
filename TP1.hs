@@ -58,7 +58,7 @@ pathExists xs start end = dfs xs [start] []
       | current `elem` visited = dfs roadmap stack visited
       | otherwise = dfs roadmap (neighbors roadmap current ++ stack) (current : visited)
     
-    neighbors :: RoadMap -> City -> [City]
+    neighbors :: RoadMap -> City -> [City] -- trocar pelo adjacent mais tarde
     neighbors roadmap city = [b | (a,b,_) <- roadmap, a == city] ++ [a | (a,b,_) <- roadmap, b == city]
 
 
