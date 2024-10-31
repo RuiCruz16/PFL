@@ -27,7 +27,7 @@ distance xs c1 c2
   where aux = [(a,b) | (a,b,_) <- xs, (a,b) == (c1,c2) || (a,b) == (c2,c1)]
 
 adjacent :: RoadMap -> City -> [(City,Distance)]
-adjacent = undefined
+adjacent xs c1 = [(b,c) | (a,b,c) <- xs, a == c1 ] ++ [(a,c) | (a,b,c) <- xs, b == c1]
 
 pathDistance :: RoadMap -> Path -> Maybe Distance
 pathDistance _ [] = Just 0
@@ -46,7 +46,19 @@ pathDistance xs p = sumDistances auxZip
         Nothing -> Nothing
                           
 rome :: RoadMap -> [City]
-rome = undefined
+rome xs = 
+  let 
+    extractStrings :: RoadMap -> [String]
+    extractStrings l = [a | (a,_,_) <- l] ++ [b | (_,b,_) <- l]
+
+    occurrencesAll :: [String] -> [(String, Int)]
+    occurrencesAll c = map (\g -> (head g, length g)) (Data.List.group (Data.List.sort c))
+
+    listStr = extractStrings xs
+    listCount = occurrencesAll listStr
+    max = maximum (map snd listCount)
+
+  in [a | (a,b) <- listCount, b == max]
 
 pathExists :: RoadMap -> City -> City -> Bool
 pathExists xs start end = dfs xs [start] []
@@ -56,17 +68,32 @@ pathExists xs start end = dfs xs [start] []
     dfs roadmap (current:stack) visited
       | current == end = True
       | current `elem` visited = dfs roadmap stack visited
-      | otherwise = dfs roadmap (neighbors roadmap current ++ stack) (current : visited)
+      | otherwise = dfs roadmap (adjacentCities roadmap current ++ stack) (current : visited)
     
-    neighbors :: RoadMap -> City -> [City] -- trocar pelo adjacent mais tarde
-    neighbors roadmap city = [b | (a,b,_) <- roadmap, a == city] ++ [a | (a,b,_) <- roadmap, b == city]
-
+    adjacentCities :: RoadMap -> City -> [City]
+    adjacentCities roadmap city = [neighbor | (neighbor, _) <- adjacent roadmap city]
 
 isStronglyConnected :: RoadMap -> Bool
 isStronglyConnected xs = and [pathExists xs a b | a <- cities xs, b <- cities xs, a /= b]
 
 shortestPath :: RoadMap -> City -> City -> [Path]
-shortestPath = undefined
+shortestPath roadmap start end
+  | start == end = [[start]]
+  | otherwise = findAllShortestPaths [([start], 0)] []
+  where
+    findAllShortestPaths :: [(Path, Distance)] -> [(Path, Distance)] -> [Path]
+    findAllShortestPaths [] results = [p | (p, d) <- results, d == minimumDistance]
+      where minimumDistance = if null results then 0 else minimum [d | (_, d) <- results]
+    
+    findAllShortestPaths ((path, dist):queue) results
+      | current == end = findAllShortestPaths queue ((path, dist) : results)
+      | otherwise = findAllShortestPaths newQueue results
+      where
+        current = last path
+        nextSteps = [(path ++ [next], dist + d) | (next, d) <- adjacent roadmap current, next `notElem` path]
+        newQueue = Data.List.sortOn snd (queue ++ nextSteps)
+
+-- Marcar sessão com o professor
 
 travelSales :: RoadMap -> Path
 travelSales = undefined
