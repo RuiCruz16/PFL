@@ -1,6 +1,7 @@
 import qualified Data.List
 import qualified Data.Array
 import qualified Data.Bits
+import Distribution.Compat.Graph (neighbors)
 
 -- PFL 2024/2025 Practical assignment 1
 
@@ -45,7 +46,7 @@ pathDistance xs p = sumDistances auxZip
                      Nothing    -> Nothing
         Nothing -> Nothing
                           
-rome :: RoadMap -> [City]
+rome :: RoadMap -> [City] -- check da função e variáveis
 rome xs = 
   let 
     extractStrings :: RoadMap -> [String]
@@ -82,16 +83,16 @@ shortestPath roadmap start end
   | otherwise = findAllShortestPaths [([start], 0)] []
   where
     findAllShortestPaths :: [(Path, Distance)] -> [(Path, Distance)] -> [Path]
-    findAllShortestPaths [] results = [p | (p, d) <- results, d == minimumDistance]
-      where minimumDistance = if null results then 0 else minimum [d | (_, d) <- results]
+    findAllShortestPaths [] res = [p | (p, d) <- res, d == minDist]
+      where minDist = if null res then 0 else minimum [d | (_, d) <- res]
     
-    findAllShortestPaths ((path, dist):queue) results
-      | current == end = findAllShortestPaths queue ((path, dist) : results)
-      | otherwise = findAllShortestPaths newQueue results
+    findAllShortestPaths ((path, dist):list) res
+      | current == end = findAllShortestPaths list ((path, dist) : res)
+      | otherwise = findAllShortestPaths newList res
       where
         current = last path
-        nextSteps = [(path ++ [next], dist + d) | (next, d) <- adjacent roadmap current, next `notElem` path]
-        newQueue = Data.List.sortOn snd (queue ++ nextSteps)
+        neighbors = [(path ++ [adjacentCity], dist + d) | (adjacentCity, d) <- adjacent roadmap current, adjacentCity `notElem` path]
+        newList = Data.List.sortOn snd (list ++ neighbors)
 
 -- Marcar sessão com o professor
 
