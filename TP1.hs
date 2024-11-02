@@ -96,68 +96,64 @@ shortestPath roadmap start end
 -- Marcar sessão com o professor
 
 travelSales :: RoadMap -> Path
-travelSales roadmap 
+travelSales roadmap
     | null allCities = []
     | not (isStronglyConnected roadmap) = []
-    | otherwise = if null finalPath then [] else finalPath
-    where
-        allCities = cities roadmap
-        n = length allCities
-        startCity = head allCities
-        
-        -- Create indices for cities
-        cityToIndex = zip allCities [0..]
-        indexToCity = zip [0..] allCities
-        
-        -- Convert between cities and indices
-        toIdx :: City -> Int
-        toIdx city = maybe 0 id (lookup city cityToIndex)
-        
-        toCity :: Int -> City
-        toCity idx = maybe "" id (lookup idx indexToCity)
-        
-        infinity = 1000000000
-        
-        -- Create distance array
-        distArray = Data.Array.array ((0,0), (n-1,n-1))
-            [(( i, j),
-              maybe infinity id (distance roadmap (toCity i) (toCity j)))
-            | i <- [0..n-1], j <- [0..n-1]]
-        
-        -- Create memo array for dynamic programming
-        dpArray = Data.Array.array ((0, 0), ((2^n)-1, n-1))
-            [((mask, pos), solve mask pos) | mask <- [0..(2^n)-1], pos <- [0..n-1]]
-        
-        solve mask pos
-            | mask == (2^n)-1 = distArray Data.Array.! (pos, 0)
-            | otherwise = minimum [
-                if Data.Bits.testBit mask next
-                    then infinity
-                    else distArray Data.Array.! (pos, next) + 
-                         dpArray Data.Array.! (Data.Bits.setBit mask next, next)
-                | next <- [0..n-1]]
-        
-        -- Function to reconstruct the path
-        constructPath :: Int -> Int -> Path
-        constructPath mask pos
-            | mask == (2^n)-1 = [toCity pos, startCity]
-            | otherwise = toCity pos : constructPath newMask bestNext
-            where
-                possibleNext = [(next, 
-                               if Data.Bits.testBit mask next 
-                               then infinity 
-                               else distArray Data.Array.! (pos, next) + 
-                                    dpArray Data.Array.! (Data.Bits.setBit mask next, next))
-                              | next <- [0..n-1]]
-                (bestNext, _) = Data.List.minimumBy (\(_,x) (_,y) -> compare x y) possibleNext
-                newMask = Data.Bits.setBit mask bestNext
-        
-        -- Generate the final path
-        startPos = 0
-        initialMask = Data.Bits.bit startPos
-        finalPath = if dpArray Data.Array.! (initialMask, startPos) >= infinity 
-                   then []
-                   else constructPath initialMask startPos
+    | dpArray Data.Array.! (initialMask, startPos) >= infinity = []
+    | otherwise = constructPath initialMask startPos
+  where
+    -- Parâmetros e valores iniciais
+    allCities = cities roadmap
+    n = length allCities
+    startCity = head allCities
+    infinity = 1000000000
+
+    -- Mapeamento de cidades para índices e vice-versa
+    cityToIndex = zip allCities [0..]
+    indexToCity = zip [0..] allCities
+    
+    -- Conversão de City para Int (índice) e vice-versa sem `fromMaybe`
+    toIdx city = case lookup city cityToIndex of
+                   Just idx -> idx
+                   Nothing -> 0  -- Fallback para 0 se a cidade não for encontrada
+
+    toCity idx = case lookup idx indexToCity of
+                   Just city -> city
+                   Nothing -> ""  -- Fallback para string vazia se o índice não for encontrado
+
+    -- Matriz de distâncias
+    distArray = Data.Array.array ((0, 0), (n-1, n-1))
+        [((i, j), case distance roadmap (toCity i) (toCity j) of
+                      Just d -> d
+                      Nothing -> infinity)
+        | i <- [0..n-1], j <- [0..n-1]]
+
+    -- Tabela de programação dinâmica
+    dpArray = Data.Array.array ((0, 0), ((2^n)-1, n-1))
+        [((mask, pos), dp mask pos) | mask <- [0..(2^n)-1], pos <- [0..n-1]]
+
+    -- Função de DP que calcula o custo mínimo
+    dp :: Int -> Int -> Distance
+    dp mask pos
+        | mask == (2^n)-1 = distArray Data.Array.! (pos, 0)  -- Retorna ao ponto inicial
+        | otherwise = minimum [if Data.Bits.testBit mask next then infinity
+                               else distArray Data.Array.! (pos, next) + dpArray Data.Array.! (Data.Bits.setBit mask next, next)
+                               | next <- [0..n-1]]
+
+    -- Função para reconstruir o caminho
+    constructPath :: Int -> Int -> Path
+    constructPath mask pos
+        | mask == (2^n)-1 = [toCity pos, startCity]
+        | otherwise = toCity pos : constructPath newMask bestNext
+      where
+        possibleNext = [(next, distArray Data.Array.! (pos, next) + dpArray Data.Array.! (Data.Bits.setBit mask next, next))
+                       | next <- [0..n-1], not (Data.Bits.testBit mask next)]
+        (bestNext, _) = Data.List.minimumBy (\(_, x) (_, y) -> compare x y) possibleNext
+        newMask = Data.Bits.setBit mask bestNext
+
+    -- Parâmetros iniciais para o caminho final
+    startPos = 0
+    initialMask = Data.Bits.bit startPos
 
 
 tspBruteForce :: RoadMap -> Path
