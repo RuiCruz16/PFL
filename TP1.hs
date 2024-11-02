@@ -1,7 +1,6 @@
 import qualified Data.List
 import qualified Data.Array
 import qualified Data.Bits
-import Distribution.Compat.Graph (neighbors)
 
 -- PFL 2024/2025 Practical assignment 1
 
@@ -80,15 +79,15 @@ isStronglyConnected xs = and [pathExists xs a b | a <- cities xs, b <- cities xs
 shortestPath :: RoadMap -> City -> City -> [Path]
 shortestPath roadmap start end
   | start == end = [[start]]
-  | otherwise = findAllShortestPaths [([start], 0)] []
+  | otherwise = searchShortestPaths [([start], 0)] []
   where
-    findAllShortestPaths :: [(Path, Distance)] -> [(Path, Distance)] -> [Path]
-    findAllShortestPaths [] res = [p | (p, d) <- res, d == minDist]
+    searchShortestPaths :: [(Path, Distance)] -> [(Path, Distance)] -> [Path]
+    searchShortestPaths [] res = [p | (p, d) <- res, d == minDist]
       where minDist = if null res then 0 else minimum [d | (_, d) <- res]
     
-    findAllShortestPaths ((path, dist):list) res
-      | current == end = findAllShortestPaths list ((path, dist) : res)
-      | otherwise = findAllShortestPaths newList res
+    searchShortestPaths ((path, dist):list) res
+      | current == end = searchShortestPaths list ((path, dist) : res)
+      | otherwise = searchShortestPaths newList res
       where
         current = last path
         neighbors = [(path ++ [adjacentCity], dist + d) | (adjacentCity, d) <- adjacent roadmap current, adjacentCity `notElem` path]
@@ -97,10 +96,72 @@ shortestPath roadmap start end
 -- Marcar sessão com o professor
 
 travelSales :: RoadMap -> Path
-travelSales = undefined
+travelSales roadmap 
+    | null allCities = []
+    | not (isStronglyConnected roadmap) = []
+    | otherwise = if null finalPath then [] else finalPath
+    where
+        allCities = cities roadmap
+        n = length allCities
+        startCity = head allCities
+        
+        -- Create indices for cities
+        cityToIndex = zip allCities [0..]
+        indexToCity = zip [0..] allCities
+        
+        -- Convert between cities and indices
+        toIdx :: City -> Int
+        toIdx city = maybe 0 id (lookup city cityToIndex)
+        
+        toCity :: Int -> City
+        toCity idx = maybe "" id (lookup idx indexToCity)
+        
+        infinity = 1000000000
+        
+        -- Create distance array
+        distArray = Data.Array.array ((0,0), (n-1,n-1))
+            [(( i, j),
+              maybe infinity id (distance roadmap (toCity i) (toCity j)))
+            | i <- [0..n-1], j <- [0..n-1]]
+        
+        -- Create memo array for dynamic programming
+        dpArray = Data.Array.array ((0, 0), ((2^n)-1, n-1))
+            [((mask, pos), solve mask pos) | mask <- [0..(2^n)-1], pos <- [0..n-1]]
+        
+        solve mask pos
+            | mask == (2^n)-1 = distArray Data.Array.! (pos, 0)
+            | otherwise = minimum [
+                if Data.Bits.testBit mask next
+                    then infinity
+                    else distArray Data.Array.! (pos, next) + 
+                         dpArray Data.Array.! (Data.Bits.setBit mask next, next)
+                | next <- [0..n-1]]
+        
+        -- Function to reconstruct the path
+        constructPath :: Int -> Int -> Path
+        constructPath mask pos
+            | mask == (2^n)-1 = [toCity pos, startCity]
+            | otherwise = toCity pos : constructPath newMask bestNext
+            where
+                possibleNext = [(next, 
+                               if Data.Bits.testBit mask next 
+                               then infinity 
+                               else distArray Data.Array.! (pos, next) + 
+                                    dpArray Data.Array.! (Data.Bits.setBit mask next, next))
+                              | next <- [0..n-1]]
+                (bestNext, _) = Data.List.minimumBy (\(_,x) (_,y) -> compare x y) possibleNext
+                newMask = Data.Bits.setBit mask bestNext
+        
+        -- Generate the final path
+        startPos = 0
+        initialMask = Data.Bits.bit startPos
+        finalPath = if dpArray Data.Array.! (initialMask, startPos) >= infinity 
+                   then []
+                   else constructPath initialMask startPos
 
--- tspBruteForce :: RoadMap -> Path
--- tspBruteForce = undefined -- only for groups of 3 people; groups of 2 people: do not edit this function
+
+tspBruteForce :: RoadMap -> Path
+tspBruteForce = undefined -- only for groups of 3 people; groups of 2 people: do not edit this function
 
 -- Some graphs to test your work
 gTest1 :: RoadMap
@@ -114,3 +175,9 @@ gTest3 = [("0","1",4),("2","3",2)]
 
 gTest4 :: Path
 gTest4 = ["7","6","5","4"]
+
+a = travelSales gTest1
+
+b = travelSales gTest2
+
+c = travelSales gTest3
