@@ -11,7 +11,7 @@ isort [] = []
 
 isort (x:xs) = insert x (isort xs)
 
---b = insert 2 [0,1,3,5,6]
+b = insert 7 [0,1,3,5,6]
 
 c = isort [4,2,5,1]
 
