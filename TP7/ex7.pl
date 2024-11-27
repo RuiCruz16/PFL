@@ -79,6 +79,8 @@ married(jay, gloria, 2008).
 married(jay, dede, 1968).
 divorced(jay, dede, 2003).
 
+% ---------------------------------------------------------------------------------------------------------
+
 ancestor_of(X,Y) :- parent(X,Y).
 
 ancestor_of(X,Y) :- parent(X,Z), ancestor_of(Z,Y).
