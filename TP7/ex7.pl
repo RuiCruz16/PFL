@@ -71,7 +71,6 @@ cousin(X,Y) :- parent(A,X), parent(B,Y), sibling(A,B), A \= B, X \= Y.
 
 uncle(X,Y) :- parent(Z,Y), sibling(X,Z), Z \= X.
 
-
 married(Person1, Person2, Year).
 divorced(Person1, Person2, Year).
 
