@@ -86,7 +86,7 @@ ancestor_of(X,Y) :- parent(X,Z), ancestor_of(Z,Y).
 
 descendant_of(X,Y) :- parent(Y,X).
 
-descendant_of(X,Y) :- parent(Y,Z), descendant_of(X,Z).
+descendant_of(X,Y) :- parent(Z,X), descendant_of(Z,Y).
 
 marriage_years(X, Y, Years) :- married(X, Y, MarriageYear), divorced(X, Y, DivorceYear), Years is DivorceYear - MarriageYear.
 
