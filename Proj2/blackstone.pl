@@ -66,7 +66,8 @@ display_game_menu :-
 
 % TODO: Implementar modo de jogo entre jogadores
 handle_game_menu_input(1) :-
-    nl, write('Starting Player vs Player game...'), nl.
+    nl, write('Starting Player vs Player game...'), nl,
+    display_game.
 
 % TODO: Implementar modo de jogo contra o computador
 handle_game_menu_input(2) :-
@@ -94,3 +95,62 @@ board([
     [blue, empty, empty, empty, empty, empty, empty, empty],
     [empty, empty, red, empty, red, empty, red, empty]
 ]).
+
+display_game :-
+    board(Board),
+    nl,
+    display_board(Board, 0).
+
+display_board(Board, Index) :-
+    Board = [FirstRow|_],
+    length(Board, NumRows),     % Get number of rows
+    length(FirstRow, NumCols),  % Get number of columns
+    print_column_numbers(NumCols),
+    print_horizontal_line(NumCols),
+    display_rows(Board, Index, NumRows),
+    print_horizontal_line(NumCols),
+    print_column_numbers(NumCols).
+
+print_column_numbers(Size) :-
+    write('    '),
+    print_numbers(1, Size).
+
+print_numbers(Current, Max) :- 
+    Current > Max, nl.
+print_numbers(Current, Max) :-
+    Current =< Max,
+    write(' '), write(Current), write(' '),
+    NextNum is Current + 1,
+    print_numbers(NextNum, Max).
+
+print_horizontal_line(Size) :-
+    write('   +'),
+    print_dashes(Size),
+    write('+'), nl.
+
+print_dashes(0).
+print_dashes(Size) :-
+    Size > 0,
+    write('---'),
+    NewSize is Size - 1,
+    print_dashes(NewSize).
+
+display_rows([], _, _).
+display_rows([Row|Rest], RowIndex, NumRows) :-
+    NewRowIndex is RowIndex + 1,
+    (NewRowIndex =< NumRows ->
+        write(' '), write(NewRowIndex), write(' |'),
+        display_row(Row),
+        write('| '), write(NewRowIndex), nl,
+        display_rows(Rest, NewRowIndex, NumRows)
+    ;   true).
+
+display_row([]).
+display_row([Cell|Rest]) :-
+    display_cell(Cell),
+    display_row(Rest).
+
+display_cell(empty) :- write(' . ').
+display_cell(red)   :- write(' R ').
+display_cell(blue)  :- write(' B ').
+display_cell(black) :- write(' X ').
