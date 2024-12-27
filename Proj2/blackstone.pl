@@ -108,8 +108,10 @@ get_game_state([Board, red]) :-
 
 game_loop([Board, Player]) :-
     display_game([Board, Player]),
-    nl, choose_piece([Board, Player], PieceCoords).
+    nl, choose_piece([Board, Player], PieceCoords),
     % format("Selected piece coordinates: ~w~n", [PieceCoords]).
+    valid_moves([Board, Player], PieceCoords, ListOfMoves),
+    format("Valid moves for selected piece: ~w~n", [ListOfMoves]).
 
 display_game([Board, Player]) :-
     nl, format("Current Player: ~w~n", [Player]), nl,
@@ -128,16 +130,17 @@ choose_piece([Board, Player], Coords) :-
     validate_coordinates(X, Y, BoardSize, [Board, Player], Coords).
 
 validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
-    (X =< 0 ; X > BoardSize ; Y =< 0 ; Y > BoardSize),
-    write('Coordinates out of bounds.'), nl, 
-    nl, choose_piece([Board, Player], Coords).
-
-validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
+    (X > 0, X =< BoardSize, Y > 0, Y =< BoardSize),
     RowIndex is BoardSize - Y,
     ColIndex is X - 1,
     nthX(Board, RowIndex, Row),
     nthX(Row, ColIndex, Piece),
     validate_piece(RowIndex, ColIndex, Piece, Player, BoardSize, [Board, Player], Coords).
+
+% FIXME: singleton variables no X, Y e BoardSize
+validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
+    write('Coordinates out of bounds.'), nl, 
+    nl, choose_piece([Board, Player], Coords).
 
 validate_piece(_, _, empty, _, _, [Board, Player], Coords) :-
     write('No piece at the selected coordinates. Please try again.'), nl,
@@ -155,6 +158,56 @@ validate_piece(_, _, Piece, Player, _, [Board, Player], Coords) :-
 validate_piece(RowIndex, ColIndex, Player, Player, BoardSize, _, (X, Y)) :-
     X is ColIndex + 1,
     Y is BoardSize - RowIndex.
+
+valid_moves([Board, Player], (X, Y), ListOfMoves) :-
+    length(Board, BoardSize),
+    RowIndex is BoardSize - Y,
+    ColIndex is X - 1,
+    findall(
+        (NX, NY),
+        (valid_move([Board, Player], RowIndex, ColIndex, NX, NY)),
+        ListOfMoves
+    ).
+
+% FIXME: singleton variable no Player
+valid_move([Board, Player], RowIndex, ColIndex, NX, NY) :-
+    length(Board, BoardSize),
+    direction(DX, DY),
+    generate_moves(RowIndex, ColIndex, DX, DY, Board, BoardSize, NX, NY).
+
+% All directions
+direction(-1, 0).
+direction(1, 0).
+direction(0, -1).
+direction(0, 1).
+direction(-1, -1).
+direction(-1, 1).
+direction(1, -1).
+direction(1, 1).
+
+% TODO: Entender esta função, como ela funciona e como ela é chamada
+generate_moves(Row, Col, DX, DY, Board, BoardSize, NX, NY) :-
+    NRow is Row + DX,
+    NCol is Col + DY,
+    within_bounds(NRow, NCol, BoardSize),
+    nthX(Board, NRow, RowList),
+    nthX(RowList, NCol, Cell),
+    Cell = empty,
+    NX is NCol + 1,
+    NY is BoardSize - NRow.
+
+generate_moves(Row, Col, DX, DY, Board, BoardSize, NX, NY) :-
+    NRow is Row + DX,
+    NCol is Col + DY,
+    within_bounds(NRow, NCol, BoardSize),
+    nthX(Board, NRow, RowList),
+    nthX(RowList, NCol, Cell),
+    Cell = empty,
+    generate_moves(NRow, NCol, DX, DY, Board, BoardSize, NX, NY).
+
+within_bounds(Row, Col, BoardSize) :-
+    Row >= 0, Row < BoardSize,
+    Col >= 0, Col < BoardSize.
 
 nthX([Head|_], 0, Head).
 nthX([_|Tail], Index, Value) :-
