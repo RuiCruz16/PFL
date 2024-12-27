@@ -111,7 +111,9 @@ game_loop([Board, Player]) :-
     nl, choose_piece([Board, Player], PieceCoords),
     % format("Selected piece coordinates: ~w~n", [PieceCoords]).
     valid_moves([Board, Player], PieceCoords, ListOfMoves),
-    format("Valid moves for selected piece: ~w~n", [ListOfMoves]).
+    format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
+    nl, choose_new_position(ListOfMoves, NewCoords),
+    format("New position coordinates: ~w~n", [NewCoords]).
 
 display_game([Board, Player]) :-
     nl, format("Current Player: ~w~n", [Player]), nl,
@@ -208,6 +210,23 @@ generate_moves(Row, Col, DX, DY, Board, BoardSize, NX, NY) :-
 within_bounds(Row, Col, BoardSize) :-
     Row >= 0, Row < BoardSize,
     Col >= 0, Col < BoardSize.
+
+choose_new_position(ListOfMoves, NewCoords) :-
+    write('Select a new position to move the piece'), nl,
+    write('Enter X coordinate: '),
+    read_input_number(X),
+    write('Enter Y coordinate: '),
+    read_input_number(Y),
+    validate_new_position(X, Y, ListOfMoves, NewCoords).
+
+validate_new_position(X, Y, ListOfMoves, NewCoords) :-
+    member((X, Y), ListOfMoves),
+    NewCoords = (X, Y).
+
+validate_new_position(X, Y, ListOfMoves, NewCoords) :-
+    \+ member((X, Y), ListOfMoves),
+    write('Invalid move. The selected coordinates are not in the list of valid moves. Please try again.'), nl,
+    nl, choose_new_position(ListOfMoves, NewCoords).
 
 nthX([Head|_], 0, Head).
 nthX([_|Tail], Index, Value) :-
