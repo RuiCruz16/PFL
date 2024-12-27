@@ -1,3 +1,5 @@
+:- use_module(library(lists)).
+
 play :- 
     display_name,
     display_main_menu.
@@ -67,7 +69,8 @@ display_game_menu :-
 % TODO: Implementar modo de jogo entre jogadores
 handle_game_menu_input(1) :-
     nl, write('Starting Player vs Player game...'), nl,
-    display_game.
+    get_game_state(GameState),
+    game_loop(GameState).
 
 % TODO: Implementar modo de jogo contra o computador
 handle_game_menu_input(2) :-
@@ -96,10 +99,68 @@ board([
     [empty, empty, red, empty, red, empty, red, empty]
 ]).
 
-display_game :-
-    board(Board),
-    nl,
+player(red, player1).
+player(blue, player2).
+
+% Ig que possa ser o initial_state
+get_game_state([Board, red]) :-
+    board(Board).
+
+game_loop([Board, Player]) :-
+    display_game([Board, Player]),
+    nl, choose_piece([Board, Player], PieceCoords).
+    % format("Selected piece coordinates: ~w~n", [PieceCoords]).
+
+display_game([Board, Player]) :-
+    nl, format("Current Player: ~w~n", [Player]), nl,
     display_board(Board, 0).
+
+switch_player(red, blue).
+switch_player(blue, red).
+
+choose_piece([Board, Player], Coords) :-
+    write('Select a piece to move'), nl,
+    write('Enter X coordinate: '),
+    read_input_number(X),
+    write('Enter Y coordinate: '),
+    read_input_number(Y),
+    length(Board, BoardSize),
+    validate_coordinates(X, Y, BoardSize, [Board, Player], Coords).
+
+validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
+    (X =< 0 ; X > BoardSize ; Y =< 0 ; Y > BoardSize),
+    write('Coordinates out of bounds.'), nl, 
+    nl, choose_piece([Board, Player], Coords).
+
+validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
+    RowIndex is BoardSize - Y,
+    ColIndex is X - 1,
+    nthX(Board, RowIndex, Row),
+    nthX(Row, ColIndex, Piece),
+    validate_piece(RowIndex, ColIndex, Piece, Player, BoardSize, [Board, Player], Coords).
+
+validate_piece(_, _, empty, _, _, [Board, Player], Coords) :-
+    write('No piece at the selected coordinates. Please try again.'), nl,
+    nl, choose_piece([Board, Player], Coords).
+
+validate_piece(_, _, black, _, _, [Board, Player], Coords) :-
+    write('Cannot move a black piece. Please try again.'), nl,
+    nl, choose_piece([Board, Player], Coords).
+
+validate_piece(_, _, Piece, Player, _, [Board, Player], Coords) :-
+    Piece \= Player,
+    write('This is not your piece. Please try again.'), nl,
+    nl, choose_piece([Board, Player], Coords).
+
+validate_piece(RowIndex, ColIndex, Player, Player, BoardSize, _, (X, Y)) :-
+    X is ColIndex + 1,
+    Y is BoardSize - RowIndex.
+
+nthX([Head|_], 0, Head).
+nthX([_|Tail], Index, Value) :-
+    Index > 0,
+    NextIndex is Index - 1,
+    nthX(Tail, NextIndex, Value).
 
 display_board(Board, Index) :-
     Board = [FirstRow|_],
@@ -137,12 +198,12 @@ print_dashes(Size) :-
 
 display_rows([], _, _).
 display_rows([Row|Rest], RowIndex, NumRows) :-
-    NewRowIndex is RowIndex + 1,
-    (NewRowIndex =< NumRows ->
-        write(' '), write(NewRowIndex), write(' |'),
+    ReverseRowIndex is NumRows - RowIndex,
+    (ReverseRowIndex > 0 ->
+        write(' '), write(ReverseRowIndex), write(' |'),
         display_row(Row),
-        write('| '), write(NewRowIndex), nl,
-        display_rows(Rest, NewRowIndex, NumRows)
+        write('| '), write(ReverseRowIndex), nl,
+        display_rows(Rest, RowIndex + 1, NumRows)
     ;   true).
 
 display_row([]).
