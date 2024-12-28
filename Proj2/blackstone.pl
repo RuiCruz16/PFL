@@ -115,7 +115,8 @@ game_loop([Board, Player]) :-
     nl, choose_new_position(ListOfMoves, NewCoords),
     %format("New position coordinates: ~w~n", [NewCoords]),
     move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
-    game_loop([NewBoard, NewPlayer]).
+    check_blocked_pieces(NewBoard, FinalBoard),
+    game_loop([FinalBoard, NewPlayer]).
 
 display_game([Board, Player]) :-
     nl, format("Current Player: ~w~n", [Player]), nl,
@@ -258,6 +259,39 @@ replace_in_row([Col|RestCols], ColIndex, Value, [Col|NewRestCols]) :-
     ColIndex > 0,
     NextColIndex is ColIndex - 1,
     replace_in_row(RestCols, NextColIndex, Value, NewRestCols).
+
+aux_between(Low, High, Low) :- Low =< High.
+aux_between(Low, High, Value) :-
+    Low < High,
+    Next is Low + 1,
+    aux_between(Next, High, Value).
+
+check_blocked_pieces(Board, FinalBoard) :-
+    length(Board, BoardSize),
+    findall(
+        (X, Y),
+        (
+            aux_between(1, BoardSize, X),
+            aux_between(1, BoardSize, Y),
+            RowIndex is BoardSize - Y,
+            ColIndex is X - 1,
+            nthX(Board, RowIndex, Row),
+            nthX(Row, ColIndex, Cell),
+            Cell \= black,
+            Cell \= empty,
+            valid_moves([Board, Cell], (X, Y), [])
+        ),
+        BlockedPieces
+    ),
+    update_board(Board, BlockedPieces, FinalBoard).
+
+update_board(Board, [], Board).
+update_board(Board, [(X, Y) | T], NewBoard) :-
+    length(Board, BoardSize),
+    RowIndex is BoardSize - Y,
+    ColIndex is X - 1,
+    replace(Board, RowIndex, ColIndex, empty, TempBoard),
+    update_board(TempBoard, T, NewBoard).
 
 display_board(Board, Index) :-
     Board = [FirstRow|_],
