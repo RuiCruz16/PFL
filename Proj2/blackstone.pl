@@ -113,7 +113,9 @@ game_loop([Board, Player]) :-
     valid_moves([Board, Player], PieceCoords, ListOfMoves),
     format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
     nl, choose_new_position(ListOfMoves, NewCoords),
-    format("New position coordinates: ~w~n", [NewCoords]).
+    %format("New position coordinates: ~w~n", [NewCoords]),
+    move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
+    game_loop([NewBoard, NewPlayer]).
 
 display_game([Board, Player]) :-
     nl, format("Current Player: ~w~n", [Player]), nl,
@@ -139,8 +141,7 @@ validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
     nthX(Row, ColIndex, Piece),
     validate_piece(RowIndex, ColIndex, Piece, Player, BoardSize, [Board, Player], Coords).
 
-% FIXME: singleton variables no X, Y e BoardSize
-validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
+validate_coordinates(_, _, _, [Board, Player], Coords) :-
     write('Coordinates out of bounds.'), nl, 
     nl, choose_piece([Board, Player], Coords).
 
@@ -171,8 +172,7 @@ valid_moves([Board, Player], (X, Y), ListOfMoves) :-
         ListOfMoves
     ).
 
-% FIXME: singleton variable no Player
-valid_move([Board, Player], RowIndex, ColIndex, NX, NY) :-
+valid_move([Board, _], RowIndex, ColIndex, NX, NY) :-
     length(Board, BoardSize),
     direction(DX, DY),
     generate_moves(RowIndex, ColIndex, DX, DY, Board, BoardSize, NX, NY).
@@ -233,6 +233,31 @@ nthX([_|Tail], Index, Value) :-
     Index > 0,
     NextIndex is Index - 1,
     nthX(Tail, NextIndex, Value).
+
+move([Board, Player], (X, Y), (NX, NY), [NewBoard, NewPlayer]) :-
+    length(Board, BoardSize),
+    RowIndex is BoardSize - Y,
+    ColIndex is X - 1,
+    NRowIndex is BoardSize - NY,
+    NColIndex is NX - 1,
+    nthX(Board, RowIndex, Row),
+    nthX(Row, ColIndex, Piece),
+    replace(Board, RowIndex, ColIndex, black, TempBoard),
+    replace(TempBoard, NRowIndex, NColIndex, Piece, NewBoard),
+    switch_player(Player, NewPlayer).
+
+replace([Row|RestRows], 0, ColIndex, Value, [NewRow|RestRows]) :-
+    replace_in_row(Row, ColIndex, Value, NewRow).
+replace([Row|RestRows], RowIndex, ColIndex, Value, [Row|NewRestRows]) :-
+    RowIndex > 0,
+    NextRowIndex is RowIndex - 1,
+    replace(RestRows, NextRowIndex, ColIndex, Value, NewRestRows).
+
+replace_in_row([_|RestCols], 0, Value, [Value|RestCols]).
+replace_in_row([Col|RestCols], ColIndex, Value, [Col|NewRestCols]) :-
+    ColIndex > 0,
+    NextColIndex is ColIndex - 1,
+    replace_in_row(RestCols, NextColIndex, Value, NewRestCols).
 
 display_board(Board, Index) :-
     Board = [FirstRow|_],
