@@ -107,6 +107,11 @@ get_game_state([Board, red]) :-
     board(Board).
 
 game_loop([Board, Player]) :-
+    game_over([Board, Player], Winner),
+    nl, format('Game over! The winner is ~w!~n', [Winner]).
+
+game_loop([Board, Player]) :-
+    \+ game_over([Board, Player], _),
     display_game([Board, Player]),
     nl, choose_piece([Board, Player], PieceCoords),
     % format("Selected piece coordinates: ~w~n", [PieceCoords]).
@@ -292,6 +297,14 @@ update_board(Board, [(X, Y) | T], NewBoard) :-
     ColIndex is X - 1,
     replace(Board, RowIndex, ColIndex, empty, TempBoard),
     update_board(TempBoard, T, NewBoard).
+
+game_over([Board, _], blue) :-
+    \+ (member(Row, Board), member(red, Row)),
+    !.
+
+game_over([Board, _], red) :-
+    \+ (member(Row, Board), member(blue, Row)),
+    !.
 
 display_board(Board, Index) :-
     Board = [FirstRow|_],
