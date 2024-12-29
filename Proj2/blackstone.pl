@@ -35,7 +35,7 @@ handle_main_menu_input(2) :-
     nl, display_instructions.
 
 handle_main_menu_input(3) :-
-    nl, write('Exiting game...').
+    nl, write('Exiting game...'), !.
 
 handle_main_menu_input(_) :-
     nl, write('Invalid option, try again.'), nl,
@@ -225,6 +225,7 @@ choose_new_position(ListOfMoves, NewCoords) :-
     read_input_number(Y),
     validate_new_position(X, Y, ListOfMoves, NewCoords).
 
+% TODO: Colocar diretamente X,Y no argumento
 validate_new_position(X, Y, ListOfMoves, NewCoords) :-
     member((X, Y), ListOfMoves),
     NewCoords = (X, Y).
@@ -271,6 +272,7 @@ aux_between(Low, High, Value) :-
     Next is Low + 1,
     aux_between(Next, High, Value).
 
+% FIXME: Corrigir o nome da Cell
 check_blocked_pieces(Board, FinalBoard) :-
     length(Board, BoardSize),
     findall(
@@ -298,6 +300,7 @@ update_board(Board, [(X, Y) | T], NewBoard) :-
     replace(Board, RowIndex, ColIndex, empty, TempBoard),
     update_board(TempBoard, T, NewBoard).
 
+% TODO: Implementar o caso de Empate
 game_over([Board, _], blue) :-
     \+ (member(Row, Board), member(red, Row)),
     !.
@@ -340,6 +343,7 @@ print_dashes(Size) :-
     NewSize is Size - 1,
     print_dashes(NewSize).
 
+% FIXME: Corrigir o `;`
 display_rows([], _, _).
 display_rows([Row|Rest], RowIndex, NumRows) :-
     ReverseRowIndex is NumRows - RowIndex,
