@@ -68,16 +68,37 @@ game_menu :-
     read_input_number(GameOption),
     handle_game_menu_input(GameOption).
 
+select_computer_difficulty(Difficulty) :-
+    nl, write('=== Computer Difficulty Selection ==='), nl,
+    write('1. Random'), nl,
+    write('2. Greedy'), nl,
+    write('Please select a difficulty (1-2): '),
+    read_input_number(DifficultyOption),
+    handle_computer_difficulty_input(DifficultyOption, Difficulty).
+
+handle_computer_difficulty_input(1, random) :-
+    nl, write('Random difficulty selected.'), nl.
+
+handle_computer_difficulty_input(2, greedy) :-
+    nl, write('Greedy difficulty selected.'), nl.
+
+handle_computer_difficulty_input(_, Difficulty) :-
+    write('Invalid option. Try again.'), nl,
+    select_computer_difficulty(Difficulty).
+
 % Handles the input of the game menu
 handle_game_menu_input(1) :-
-  select_game_variant(GameVariant),
-  nl, write('Starting Player vs Player game...'), nl,
-  initial_state(GameState),
-  game_loop(GameState, GameVariant).
+    select_game_variant(GameVariant),
+    nl, write('Starting Player vs Player game...'), nl,
+    initial_state(GameState),
+    game_loop(GameState, GameVariant).
 
-% TODO: Implementar modo de jogo contra o computador
 handle_game_menu_input(2) :-
-    nl, write('Coming soon...').
+    select_computer_difficulty(Difficulty),
+    select_game_variant(GameVariant),
+    nl, write('Starting Player vs Computer game...'), nl,
+    initial_state(GameState),
+    game_loop_computer(GameState, GameVariant, Difficulty).
 
 % TODO: Implementar modo de jogo entre computadores
 handle_game_menu_input(3) :-

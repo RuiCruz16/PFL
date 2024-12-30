@@ -28,6 +28,36 @@ game_loop([Board, Player], GameVariant) :-
     check_blocked_pieces(NewBoard, GameVariant, FinalBoard),
     game_loop([FinalBoard, NewPlayer], GameVariant).
 
+game_loop_computer([Board, Player], _, _) :-
+    game_over([Board, Player], draw),
+    nl, write('Game over! It\'s a draw!'), nl.
+
+game_loop_computer([Board, Player], _, _) :-
+    game_over([Board, Player], Winner),
+    nl, format('Game over! The winner is ~w!~n', [Winner]).
+
+game_loop_computer([Board, Player], GameVariant, greedy) :- 
+    \+ game_over([Board, Player], _),
+    display_game([Board, Player]),
+    nl, choose_piece([Board, Player], PieceCoords),
+    % format("Selected piece coordinates: ~w~n", [PieceCoords]),
+    valid_moves([Board, Player], PieceCoords, ListOfMoves),
+    format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
+    nl, choose_new_position(ListOfMoves, NewCoords),
+    % format("New position coordinates: ~w~n", [NewCoords]),
+    move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
+    check_blocked_pieces(NewBoard, GameVariant, TempBoard),
+    perform_bot_move(TempBoard, NewPlayer, GameVariant, greedy, [FinalBoard, FinalPlayer]),
+    game_loop_computer([FinalBoard, FinalPlayer], GameVariant, greedy).
+
+perform_bot_move(Board, Player, GameVariant, Difficulty, [NewBoard, NewPlayer]) :-
+    choose_move([Board, Player], Difficulty, [OldCoords, NewCoords]),
+    move([Board, Player], OldCoords, NewCoords, [TempBoard, NewPlayer]),
+    check_blocked_pieces(TempBoard, GameVariant, NewBoard).
+
+choose_move([Board, Player], greedy, [OldCoords, NewCoords]) :-
+    write('Finding best move...'), nl.
+
 choose_piece([Board, Player], Coords) :-
     write('Select a piece to move'), nl,
     write('Enter X coordinate: '),
