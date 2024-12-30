@@ -7,15 +7,15 @@ switch_player(blue, red).
 initial_state([Board, red]) :-
     board(Board).
 
-game_loop([Board, Player]) :-
+game_loop([Board, Player], _) :-
     game_over([Board, Player], draw),
     nl, write('Game over! It\'s a draw!'), nl.
 
-game_loop([Board, Player]) :-
+game_loop([Board, Player], _) :-
     game_over([Board, Player], Winner),
     nl, format('Game over! The winner is ~w!~n', [Winner]).
 
-game_loop([Board, Player]) :-
+game_loop([Board, Player], GameVariant) :-
     \+ game_over([Board, Player], _),
     display_game([Board, Player]),
     nl, choose_piece([Board, Player], PieceCoords),
@@ -25,8 +25,8 @@ game_loop([Board, Player]) :-
     nl, choose_new_position(ListOfMoves, NewCoords),
     %format("New position coordinates: ~w~n", [NewCoords]),
     move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
-    check_blocked_pieces(NewBoard, FinalBoard),
-    game_loop([FinalBoard, NewPlayer]).
+    check_blocked_pieces(NewBoard, GameVariant, FinalBoard),
+    game_loop([FinalBoard, NewPlayer], GameVariant).
 
 choose_piece([Board, Player], Coords) :-
     write('Select a piece to move'), nl,
@@ -156,7 +156,7 @@ replace_in_row([Col|RestCols], ColIndex, Value, [Col|NewRestCols]) :-
     NextColIndex is ColIndex - 1,
     replace_in_row(RestCols, NextColIndex, Value, NewRestCols).
 
-check_blocked_pieces(Board, FinalBoard) :-
+check_blocked_pieces(Board, default, FinalBoard) :-
     length(Board, BoardSize),
     findall(
         (X, Y),
@@ -175,6 +175,77 @@ check_blocked_pieces(Board, FinalBoard) :-
     ),
     update_board(Board, BlockedPieces, FinalBoard).
 
+check_blocked_pieces(Board, medium_churn, FinalBoard) :-
+    length(Board, BoardSize),
+    findall(
+      (X, Y),
+      (
+      aux_between(1, BoardSize, X),
+      aux_between(1, BoardSize, Y),
+      RowIndex is BoardSize - Y,
+      ColIndex is X - 1,
+      nthX(Board, RowIndex, Row),
+      nthX(Row, ColIndex, Piece),
+      Piece \= black,
+      Piece \= empty,
+      valid_moves([Board, Piece], (X, Y), [])
+      ),
+      BlockedPieces
+    ),
+    update_board(Board, BlockedPieces, TempBoard),
+    findall(
+      (BX, BY),
+      (
+      member((X, Y), BlockedPieces),
+      direction(DX, DY),
+      BX is X + DX,
+      BY is Y + DY,
+      within_bounds(BoardSize - BY, BX - 1, BoardSize),
+      RowIndex is BoardSize - BY,
+      ColIndex is BX - 1,
+      nthX(TempBoard, RowIndex, Row),
+      nthX(Row, ColIndex, black)
+      ),
+      AdjacentBlackPieces
+    ),
+    update_board(TempBoard, AdjacentBlackPieces, FinalBoard).
+
+check_blocked_pieces(Board, high_churn, FinalBoard) :-
+    length(Board, BoardSize),
+    findall(
+        (X, Y),
+        (
+            aux_between(1, BoardSize, X),
+            aux_between(1, BoardSize, Y),
+            RowIndex is BoardSize - Y,
+            ColIndex is X - 1,
+            nthX(Board, RowIndex, Row),
+            nthX(Row, ColIndex, Piece),
+            Piece \= black,
+            Piece \= empty,
+            valid_moves([Board, Piece], (X, Y), [])
+        ),
+        BlockedPieces
+    ),
+    handle_high_churn(Board, BlockedPieces, FinalBoard, BoardSize).
+
+handle_high_churn(Board, [], Board, _) :- !.
+handle_high_churn(Board, BlockedPieces, FinalBoard, BoardSize) :-
+    update_board(Board, BlockedPieces, TempBoard),
+    findall(
+        (BX, BY),
+        (
+            aux_between(1, BoardSize, BX),
+            aux_between(1, BoardSize, BY),
+            RowIndex is BoardSize - BY,
+            ColIndex is BX - 1,
+            nthX(TempBoard, RowIndex, Row),
+            nthX(Row, ColIndex, black)
+        ),
+        AllBlackPieces
+    ),
+    update_board(TempBoard, AllBlackPieces, FinalBoard).
+
 update_board(Board, [], Board).
 update_board(Board, [(X, Y) | T], NewBoard) :-
     length(Board, BoardSize),
@@ -184,9 +255,9 @@ update_board(Board, [(X, Y) | T], NewBoard) :-
     update_board(TempBoard, T, NewBoard).
 
 game_over([Board, _], draw) :-
-  \+ (member(Row, Board), member(red, Row)),
-  \+ (member(Row, Board), member(blue, Row)),
-  !.
+    \+ (member(Row, Board), member(red, Row)),
+    \+ (member(Row, Board), member(blue, Row)),
+    !.
 
 game_over([Board, _], blue) :-
     \+ (member(Row, Board), member(red, Row)),

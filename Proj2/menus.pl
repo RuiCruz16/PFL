@@ -37,6 +37,26 @@ instructions_menu :-
     skip_line,
     main_menu.
 
+% Selects the game variant and saves it for later use
+select_game_variant(GameVariant) :-
+  nl, write('=== Game Variant Selection ==='), nl,
+  write('1. Default -> Play with the default rules of the game.'), nl,
+  write('2. Medium Churn -> When a piece is removed, all surrounding black pieces are also removed.'), nl,
+  write('3. High Churn -> When a piece is removed, all black pieces on the board are also removed.'), nl,
+  write('Please select a game variant (1-3): '),
+  read_input_number(GameOption),
+  handle_game_variant_input(GameOption, GameVariant).
+
+handle_game_variant_input(1, default) :-
+  nl, write('Default variant selected.'), nl.
+handle_game_variant_input(2, medium_churn) :-
+  nl, write('Medium Churn variant selected.'), nl.
+handle_game_variant_input(3, high_churn) :-
+  nl, write('High Churn variant selected.'), nl.
+handle_game_variant_input(_, GameVariant) :-
+  write('Invalid option. Try again.'), nl,
+  select_game_variant(GameVariant).
+
 % Displays the game menu
 game_menu :-
     write('Select the mode you want to play:'), nl,
@@ -50,9 +70,10 @@ game_menu :-
 
 % Handles the input of the game menu
 handle_game_menu_input(1) :-
-    nl, write('Starting Player vs Player game...'), nl,
-    initial_state(GameState),
-    game_loop(GameState).
+  select_game_variant(GameVariant),
+  nl, write('Starting Player vs Player game...'), nl,
+  initial_state(GameState),
+  game_loop(GameState, GameVariant).
 
 % TODO: Implementar modo de jogo contra o computador
 handle_game_menu_input(2) :-
