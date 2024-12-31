@@ -56,7 +56,130 @@ perform_bot_move(Board, Player, GameVariant, Difficulty, [NewBoard, NewPlayer]) 
     check_blocked_pieces(TempBoard, GameVariant, NewBoard).
 
 choose_move([Board, Player], greedy, [OldCoords, NewCoords]) :-
-    write('Finding best move...'), nl.
+    findall(
+        [OldCoords, NewCoords, Value],
+        (
+            find_piece(Board, Player, OldCoords),
+            valid_moves([Board, Player], OldCoords, ValidMoves),
+            member(NewCoords, ValidMoves),
+            simulate_move_and_evaluate(Board, Player, OldCoords, NewCoords, Value)
+        ),
+        MoveValues
+    ),
+    select_best_move(MoveValues, [OldCoords, NewCoords, _]),
+    format("Bot chose move from ~w to ~w~n", [OldCoords, NewCoords]).
+
+find_piece(Board, Player, (X, Y)) :-
+    length(Board, BoardSize),
+    aux_between(1, BoardSize, X),
+    aux_between(1, BoardSize, Y),
+    RowIndex is BoardSize - Y,
+    ColIndex is X - 1,
+    nthX(Board, RowIndex, Row),
+    nthX(Row, ColIndex, Player).
+
+simulate_move_and_evaluate(Board, Player, OldCoords, NewCoords, Value) :-
+    move([Board, Player], OldCoords, NewCoords, [TempBoard, Opponent]),
+    count_opponent_moves(TempBoard, Opponent, OpponentMoves),
+    count_own_moves(TempBoard, Player, OwnMoves),
+    evaluate_directions(TempBoard, Opponent, DirectionValue),
+    WeightOpponentMoves is 1,
+    WeightDirectionValue is 0.8,
+    WeightOwnMoves is 0.2,
+    Value is OpponentMoves * WeightOpponentMoves + DirectionValue * WeightDirectionValue - OwnMoves * WeightOwnMoves.
+
+count_opponent_moves(Board, Opponent, TotalMoves) :-
+    findall(
+        (X, Y),
+        find_piece(Board, Opponent, (X, Y)),
+        OpponentPieces
+    ),
+    findall(
+        Move,
+        (
+            member(Piece, OpponentPieces),
+            valid_moves([Board, Opponent], Piece, Moves),
+            member(Move, Moves)
+        ),
+        AllMoves
+    ),
+    length(AllMoves, TotalMoves).
+
+count_own_moves(Board, Player, TotalMoves) :-
+    findall(
+        (X, Y),
+        find_piece(Board, Player, (X, Y)),
+        PlayerPieces
+    ),
+    findall(
+        Move,
+        (
+            member(Piece, PlayerPieces),
+            valid_moves([Board, Player], Piece, Moves),
+            member(Move, Moves)
+        ),
+        AllMoves
+    ),
+    length(AllMoves, TotalMoves).
+
+evaluate_directions(Board, Opponent, TotalDirections) :-
+    findall(
+        Directions,
+        (
+            find_piece(Board, Opponent, Piece),
+            count_directions(Board, Opponent, Piece, Directions)
+        ),
+        DirectionValues
+    ),
+    aux_sumlist(DirectionValues, TotalDirections).
+
+aux_sumlist([], 0).
+aux_sumlist([Head | Tail], Sum) :-
+    aux_sumlist(Tail, PartialSum), % Soma parcial do restante da lista.
+    Sum is Head + PartialSum. % Soma o elemento atual à soma parcial.
+
+count_directions(Board, _, (X, Y), DirectionCount) :-
+    length(Board, BoardSize),
+    findall(
+        1,
+        (
+            direction(DX, DY),
+            NRow is X + DX,
+            NCol is Y + DY,
+            within_bounds(NRow, NCol, BoardSize),
+            nthX(Board, NRow, Row),
+            nthX(Row, NCol, Cell),
+            Cell = empty
+        ),
+        Directions
+    ),
+    length(Directions, DirectionCount).
+
+select_best_move(MoveValues, BestMove) :-
+    sort_moves(MoveValues, SortedMoves), % Ordenar por valor (menor primeiro)
+    write('Sorted moves: '), write(SortedMoves), nl,
+    nth0(0, SortedMoves, BestMove).        % Escolher o primeiro movimento da lista
+
+% Função personalizada para ordenar os movimentos
+sort_moves(MoveValues, SortedMoves) :-
+    quicksort(MoveValues, SortedMoves).
+
+% Implementação do quicksort
+quicksort([], []).
+quicksort([H|T], Sorted) :-
+    partition(H, T, L, R),
+    quicksort(L, SortedL),
+    quicksort(R, SortedR),
+    append(SortedL, [H|SortedR], Sorted).
+
+% Particiona a lista em duas, com base no valor do terceiro elemento
+partition(_, [], [], []).
+partition([A, B, V], [[C, D, W]|T], [[C, D, W]|L], R) :-
+    W =< V,
+    partition([A, B, V], T, L, R).
+partition([A, B, V], [[C, D, W]|T], L, [[C, D, W]|R]) :-
+    W > V,
+    partition([A, B, V], T, L, R).
 
 choose_piece([Board, Player], Coords) :-
     write('Select a piece to move'), nl,
