@@ -21,3 +21,23 @@ nthX([_|Tail], Index, Value) :-
     Index > 0,
     NextIndex is Index - 1,
     nthX(Tail, NextIndex, Value).
+
+aux_sumlist([], 0).
+aux_sumlist([Head | Tail], Sum) :-
+    aux_sumlist(Tail, PartialSum),
+    Sum is Head + PartialSum.
+
+quicksort([], []).
+quicksort([Head|Tail], Sorted) :-
+    partition(Head, Tail, Left, Right),
+    quicksort(Left, SortedLeft),
+    quicksort(Right, SortedRight),
+    append(SortedLeft, [Head|SortedRight], Sorted).
+
+partition(_, [], [], []).
+partition([PivotA, PivotB, PivotValue], [[ElemA, ElemB, ElemValue]|Tail], [[ElemA, ElemB, ElemValue]|Left], Right) :-
+    ElemValue =< PivotValue,
+    partition([PivotA, PivotB, PivotValue], Tail, Left, Right).
+partition([PivotA, PivotB, PivotValue], [[ElemA, ElemB, ElemValue]|Tail], Left, [[ElemA, ElemB, ElemValue]|Right]) :-
+    ElemValue > PivotValue,
+    partition([PivotA, PivotB, PivotValue], Tail, Left, Right).

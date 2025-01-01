@@ -19,13 +19,12 @@ game_loop([Board, Player], GameVariant) :-
     \+ game_over([Board, Player], _),
     display_game([Board, Player]),
     nl, choose_piece([Board, Player], PieceCoords),
-    % format("Selected piece coordinates: ~w~n", [PieceCoords]).
     valid_moves([Board, Player], PieceCoords, ListOfMoves),
     format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
     nl, choose_new_position(ListOfMoves, NewCoords),
-    %format("New position coordinates: ~w~n", [NewCoords]),
     move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
     check_blocked_pieces(NewBoard, GameVariant, FinalBoard),
+    nl, write('Player '), write(Player), write(' moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     game_loop([FinalBoard, NewPlayer], GameVariant).
 
 game_loop_computer([Board, Player], _, _) :-
@@ -36,38 +35,38 @@ game_loop_computer([Board, Player], _, _) :-
     game_over([Board, Player], Winner),
     nl, format('Game over! The winner is ~w!~n', [Winner]).
 
-game_loop_computer([Board, Player], GameVariant, greedy) :- 
+game_loop_computer([Board, Player], GameVariant, Difficulty) :- 
     \+ game_over([Board, Player], _),
     display_game([Board, Player]),
     nl, choose_piece([Board, Player], PieceCoords),
-    % format("Selected piece coordinates: ~w~n", [PieceCoords]),
     valid_moves([Board, Player], PieceCoords, ListOfMoves),
     format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
     nl, choose_new_position(ListOfMoves, NewCoords),
-    % format("New position coordinates: ~w~n", [NewCoords]),
     move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
     check_blocked_pieces(NewBoard, GameVariant, TempBoard),
-    perform_bot_move(TempBoard, NewPlayer, GameVariant, greedy, [FinalBoard, FinalPlayer]),
-    game_loop_computer([FinalBoard, FinalPlayer], GameVariant, greedy).
+    nl, write('Player ('), write(Player), write(') moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
+    display_game([TempBoard, NewPlayer]), nl, 
+    perform_computer_move([TempBoard, NewPlayer], GameVariant, Difficulty, [FinalBoard, FinalPlayer]),
+    game_loop_computer([FinalBoard, FinalPlayer], GameVariant, Difficulty).
 
-perform_bot_move(Board, Player, GameVariant, Difficulty, [NewBoard, NewPlayer]) :-
-    choose_move([Board, Player], Difficulty, [OldCoords, NewCoords]),
-    move([Board, Player], OldCoords, NewCoords, [TempBoard, NewPlayer]),
+perform_computer_move([Board, Player], GameVariant, Difficulty, [NewBoard, NewPlayer]) :-
+    choose_move([Board, Player], Difficulty, [ChosenPosition, NewPosition]),
+    move([Board, Player], ChosenPosition, NewPosition, [TempBoard, NewPlayer]),
     check_blocked_pieces(TempBoard, GameVariant, NewBoard).
 
-choose_move([Board, Player], greedy, [OldCoords, NewCoords]) :-
+choose_move([Board, Player], greedy, [ChosenPosition, NewPosition]) :-
     findall(
-        [OldCoords, NewCoords, Value],
+        [ChosenPosition, NewPosition, Value],
         (
-            find_piece(Board, Player, OldCoords),
-            valid_moves([Board, Player], OldCoords, ValidMoves),
-            member(NewCoords, ValidMoves),
-            simulate_move_and_evaluate(Board, Player, OldCoords, NewCoords, Value)
+            find_piece(Board, Player, ChosenPosition),
+            valid_moves([Board, Player], ChosenPosition, ValidMoves),
+            member(NewPosition, ValidMoves),
+            simulate_move([Board, Player], ChosenPosition, NewPosition, Value)
         ),
         MoveValues
     ),
-    select_best_move(MoveValues, [OldCoords, NewCoords, _]),
-    format("Bot chose move from ~w to ~w~n", [OldCoords, NewCoords]).
+    select_best_move(MoveValues, [ChosenPosition, NewPosition, _]),
+    format("Computer (~w) chose move from (~w) to (~w)~n", [Player, ChosenPosition, NewPosition]).
 
 find_piece(Board, Player, (X, Y)) :-
     length(Board, BoardSize),
@@ -78,34 +77,20 @@ find_piece(Board, Player, (X, Y)) :-
     nthX(Board, RowIndex, Row),
     nthX(Row, ColIndex, Player).
 
-simulate_move_and_evaluate(Board, Player, OldCoords, NewCoords, Value) :-
-    move([Board, Player], OldCoords, NewCoords, [TempBoard, Opponent]),
-    count_opponent_moves(TempBoard, Opponent, OpponentMoves),
-    count_own_moves(TempBoard, Player, OwnMoves),
-    evaluate_directions(TempBoard, Opponent, DirectionValue),
+simulate_move([Board, Player], ChosenPosition, NewPosition, Value) :-
+    move([Board, Player], ChosenPosition, NewPosition, [TempBoard, Opponent]),
+    value([TempBoard, Player], Opponent, Value).
+
+value([Board, Player], Opponent, Value) :-
+    count_player_moves(Board, Opponent, OpponentMoves),
+    count_player_moves(Board, Player, ComputerMoves),
+    count_all_directions(Board, Opponent, OpponentDirections),
     WeightOpponentMoves is 1,
-    WeightDirectionValue is 0.8,
-    WeightOwnMoves is 0.2,
-    Value is OpponentMoves * WeightOpponentMoves + DirectionValue * WeightDirectionValue - OwnMoves * WeightOwnMoves.
+    WeightOpponentDirections is 0.8,
+    WeightComputerMoves is 0.2,
+    Value is OpponentMoves * WeightOpponentMoves + OpponentDirections * WeightOpponentDirections - ComputerMoves * WeightComputerMoves.
 
-count_opponent_moves(Board, Opponent, TotalMoves) :-
-    findall(
-        (X, Y),
-        find_piece(Board, Opponent, (X, Y)),
-        OpponentPieces
-    ),
-    findall(
-        Move,
-        (
-            member(Piece, OpponentPieces),
-            valid_moves([Board, Opponent], Piece, Moves),
-            member(Move, Moves)
-        ),
-        AllMoves
-    ),
-    length(AllMoves, TotalMoves).
-
-count_own_moves(Board, Player, TotalMoves) :-
+count_player_moves(Board, Player, TotalMoves) :-
     findall(
         (X, Y),
         find_piece(Board, Player, (X, Y)),
@@ -122,23 +107,18 @@ count_own_moves(Board, Player, TotalMoves) :-
     ),
     length(AllMoves, TotalMoves).
 
-evaluate_directions(Board, Opponent, TotalDirections) :-
+count_all_directions(Board, Player, TotalDirections) :-
     findall(
-        Directions,
+        PieceDirections,
         (
-            find_piece(Board, Opponent, Piece),
-            count_directions(Board, Opponent, Piece, Directions)
+            find_piece(Board, Player, Piece),
+            count_piece_directions(Board, Piece, PieceDirections)
         ),
         DirectionValues
     ),
     aux_sumlist(DirectionValues, TotalDirections).
 
-aux_sumlist([], 0).
-aux_sumlist([Head | Tail], Sum) :-
-    aux_sumlist(Tail, PartialSum), % Soma parcial do restante da lista.
-    Sum is Head + PartialSum. % Soma o elemento atual à soma parcial.
-
-count_directions(Board, _, (X, Y), DirectionCount) :-
+count_piece_directions(Board, (X, Y), DirectionsCount) :-
     length(Board, BoardSize),
     findall(
         1,
@@ -153,33 +133,15 @@ count_directions(Board, _, (X, Y), DirectionCount) :-
         ),
         Directions
     ),
-    length(Directions, DirectionCount).
+    length(Directions, DirectionsCount).
 
 select_best_move(MoveValues, BestMove) :-
-    sort_moves(MoveValues, SortedMoves), % Ordenar por valor (menor primeiro)
-    write('Sorted moves: '), write(SortedMoves), nl,
-    nth0(0, SortedMoves, BestMove).        % Escolher o primeiro movimento da lista
+    sort_moves(MoveValues, SortedMoves),
+    % write('Sorted moves: '), write(SortedMoves), nl,
+    nthX(SortedMoves, 0, BestMove).
 
-% Função personalizada para ordenar os movimentos
 sort_moves(MoveValues, SortedMoves) :-
     quicksort(MoveValues, SortedMoves).
-
-% Implementação do quicksort
-quicksort([], []).
-quicksort([H|T], Sorted) :-
-    partition(H, T, L, R),
-    quicksort(L, SortedL),
-    quicksort(R, SortedR),
-    append(SortedL, [H|SortedR], Sorted).
-
-% Particiona a lista em duas, com base no valor do terceiro elemento
-partition(_, [], [], []).
-partition([A, B, V], [[C, D, W]|T], [[C, D, W]|L], R) :-
-    W =< V,
-    partition([A, B, V], T, L, R).
-partition([A, B, V], [[C, D, W]|T], L, [[C, D, W]|R]) :-
-    W > V,
-    partition([A, B, V], T, L, R).
 
 choose_piece([Board, Player], Coords) :-
     write('Select a piece to move'), nl,
