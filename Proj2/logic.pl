@@ -27,15 +27,15 @@ game_loop([Board, Player], GameVariant) :-
     nl, write('Player '), write(Player), write(' moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     game_loop([FinalBoard, NewPlayer], GameVariant).
 
-game_loop_computer([Board, Player], _, _) :-
+game_loop_player_pc([Board, Player], _, _) :-
     game_over([Board, Player], draw),
     nl, write('Game over! It\'s a draw!'), nl.
 
-game_loop_computer([Board, Player], _, _) :-
+game_loop_player_pc([Board, Player], _, _) :-
     game_over([Board, Player], Winner),
     nl, format('Game over! The winner is ~w!~n', [Winner]).
 
-game_loop_computer([Board, Player], GameVariant, Difficulty) :- 
+game_loop_player_pc([Board, Player], GameVariant, Difficulty) :- 
     \+ game_over([Board, Player], _),
     display_game([Board, Player]),
     nl, choose_piece([Board, Player], PieceCoords),
@@ -47,7 +47,27 @@ game_loop_computer([Board, Player], GameVariant, Difficulty) :-
     nl, write('Player ('), write(Player), write(') moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     display_game([TempBoard, NewPlayer]), nl, 
     perform_computer_move([TempBoard, NewPlayer], GameVariant, Difficulty, [FinalBoard, FinalPlayer]),
-    game_loop_computer([FinalBoard, FinalPlayer], GameVariant, Difficulty).
+    game_loop_player_pc([FinalBoard, FinalPlayer], GameVariant, Difficulty).
+
+game_loop_pc_pc([Board, Player], _, _) :-
+    game_over([Board, Player], draw),
+    nl, write('Game over! It\'s a draw!'), nl.
+
+game_loop_pc_pc([Board, Player], _, _) :-
+    game_over([Board, Player], Winner),
+    nl, format('Game over! The winner is ~w!~n', [Winner]).
+
+game_loop_pc_pc([Board, Player], GameVariant, Difficulty) :-
+    \+ game_over([Board, Player], _),
+    display_game([Board, Player]),
+    approve_input(Player),
+    perform_computer_move([Board, Player], GameVariant, Difficulty, [NewBoard, NewPlayer]),
+    game_loop_pc_pc([NewBoard, NewPlayer], GameVariant, Difficulty).
+
+approve_input(Player) :-
+    nl, write('Press any key to continue...'), nl,
+    read_line(_),
+    nl, write('Player '), write(Player), write(' turn.'), nl.
 
 perform_computer_move([Board, Player], GameVariant, Difficulty, [NewBoard, NewPlayer]) :-
     choose_move([Board, Player], Difficulty, [ChosenPosition, NewPosition]),
@@ -66,6 +86,19 @@ choose_move([Board, Player], greedy, [ChosenPosition, NewPosition]) :-
         MoveValues
     ),
     select_best_move(MoveValues, [ChosenPosition, NewPosition, _]),
+    format("Computer (~w) chose move from (~w) to (~w)~n", [Player, ChosenPosition, NewPosition]).
+
+choose_move([Board, Player], random, [ChosenPosition, NewPosition]) :-
+    findall(
+        ChosenPosition,
+        (
+            find_piece(Board, Player, ChosenPosition)
+        ),
+        ListOfPieces
+    ), 
+    random_member(ChosenPosition, ListOfPieces),
+    valid_moves([Board, Player], ChosenPosition, ListOfMoves),
+    random_member(NewPosition, ListOfMoves),
     format("Computer (~w) chose move from (~w) to (~w)~n", [Player, ChosenPosition, NewPosition]).
 
 find_piece(Board, Player, (X, Y)) :-

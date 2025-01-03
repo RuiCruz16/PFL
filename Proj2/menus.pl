@@ -98,11 +98,14 @@ handle_game_menu_input(2) :-
     select_game_variant(GameVariant),
     nl, write('Starting Player vs Computer game...'), nl,
     initial_state(GameState),
-    game_loop_computer(GameState, GameVariant, Difficulty).
+    game_loop_player_pc(GameState, GameVariant, Difficulty).
 
-% TODO: Implementar modo de jogo entre computadores
 handle_game_menu_input(3) :-
-    nl, write('Coming soon...').
+    select_computer_difficulty(Difficulty),
+    select_game_variant(GameVariant),
+    nl, write('Starting Computer vs Computer game...'), nl,
+    initial_state(GameState),
+    game_loop_pc_pc(GameState, GameVariant, Difficulty).
 
 handle_game_menu_input(4) :-
     nl, write('Returning to main menu...'), nl,
