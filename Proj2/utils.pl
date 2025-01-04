@@ -12,6 +12,7 @@ read_input_number(X,Acc) :-
     read_input_number(X, NewAcc).
 
 % aux_between(+Low, +High, -Value)
+% Auxiliary function to check if Value is between Low and High
 aux_between(Low, High, Low) :- Low =< High.
 aux_between(Low, High, Value) :-
     Low < High,
@@ -19,6 +20,7 @@ aux_between(Low, High, Value) :-
     aux_between(Next, High, Value).
 
 % nthX(+List, +Index, -Value)
+% Returns the element at the Index position of the List
 nthX([Head|_], 0, Head).
 nthX([_|Tail], Index, Value) :-
     Index > 0,
@@ -26,12 +28,14 @@ nthX([_|Tail], Index, Value) :-
     nthX(Tail, NextIndex, Value).
 
 % aux_sumlist(+List, -Sum)
+% Auxiliary function to calculate the sum of the elements of a list
 aux_sumlist([], 0).
 aux_sumlist([Head | Tail], Sum) :-
     aux_sumlist(Tail, PartialSum),
     Sum is Head + PartialSum.
 
 % quicksort(+List, -Sorted)
+% Sorts the list using the quicksort algorithm
 quicksort([], []).
 quicksort([Head|Tail], Sorted) :-
     partition(Head, Tail, Left, Right),
@@ -40,6 +44,7 @@ quicksort([Head|Tail], Sorted) :-
     append(SortedLeft, [Head|SortedRight], Sorted).
 
 % partition(+Pivot, +List, -Left, -Right)
+% Partitions the list into two lists, one with elements smaller than the pivot and the other with elements greater than the pivot
 partition(_, [], [], []).
 partition([PivotA, PivotB, PivotValue], [[ElemA, ElemB, ElemValue]|Tail], [[ElemA, ElemB, ElemValue]|Left], Right) :-
     ElemValue =< PivotValue,

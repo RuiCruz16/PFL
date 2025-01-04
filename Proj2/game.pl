@@ -7,6 +7,7 @@
 :- consult('logic.pl').
 
 % play/0
+% Main predicate to start the game, give acess to the main menu, where the user can play the game
 play :- 
     nl, display_name, 
     main_menu.

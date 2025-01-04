@@ -12,6 +12,7 @@ display_game([Board, Player]) :-
     display_board(Board, 0).
 
 % board(+Size, -Board)
+% Returns the initial board for the given size
 board(6, [
     [empty, red, empty, red, empty, empty],
     [empty, empty, empty, empty, empty, blue],
@@ -58,11 +59,13 @@ display_board(Board, Index) :-
     print_column_numbers(NumCols).
 
 % print_column_numbers(+Size)
+% Prints the column numbers
 print_column_numbers(Size) :-
     write('    '),
     print_numbers(1, Size).
 
 % print_numbers(+Current, +Max)
+% Prints the numbers from Current to Max (size of the board)
 print_numbers(Current, Max) :- 
     Current > Max, nl.
 print_numbers(Current, Max) :-
@@ -72,12 +75,14 @@ print_numbers(Current, Max) :-
     print_numbers(NextNum, Max).
 
 % print_horizontal_line(+Size)
+% Prints a horizontal line
 print_horizontal_line(Size) :-
     write('   +'),
     print_dashes(Size),
     write('+'), nl.
 
 % print_dashes(+Size)
+% Prints dashes
 print_dashes(0).
 print_dashes(Size) :-
     Size > 0,
@@ -86,6 +91,7 @@ print_dashes(Size) :-
     print_dashes(NewSize).
 
 % display_rows(+Board, +RowIndex, +NumRows)
+% Displays the rows of the board
 display_rows([], _, _).
 display_rows([Row|Rest], RowIndex, NumRows) :-
     ReverseRowIndex is NumRows - RowIndex,
@@ -96,12 +102,14 @@ display_rows([Row|Rest], RowIndex, NumRows) :-
     display_rows(Rest, RowIndex + 1, NumRows).
 
 % display_row(+Row)
+% Displays a row of the board
 display_row([]).
 display_row([Piece|Rest]) :-
     display_piece(Piece),
     display_row(Rest).
 
 % display_piece(+Piece)
+% Displays a piece
 display_piece(empty) :- write(' . ').
 display_piece(red)   :- write(' R ').
 display_piece(blue)  :- write(' B ').
