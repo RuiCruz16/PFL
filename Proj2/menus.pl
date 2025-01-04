@@ -1,3 +1,4 @@
+% main_menu/0
 % Displays the main menu of the game
 main_menu :- 
     write('1. Start Game'), nl,
@@ -7,6 +8,7 @@ main_menu :-
     read_input_number(MenuOption),
     handle_main_menu_input(MenuOption).
 
+% handle_main_menu_input(+MenuOption)
 % Handles the input of the main menu
 handle_main_menu_input(1) :- 
     nl, game_menu.
@@ -21,9 +23,10 @@ handle_main_menu_input(_) :-
     nl, write('Invalid option, try again.'), nl,
     main_menu.
 
+% instructions_menu/0
 % Displays the instructions of the game
 instructions_menu :-
-    write('Blackstone Instructions:'), nl,
+    write('=== Blackstone Instructions ==='), nl,
     write('1. Blackstone is a two-player strategy game played on a square board of any even size.'), nl,
     write('2. The board should be at least 6x6.'), nl,
     write('3. The board starts with red and blue stones on the corners.'), nl,
@@ -37,6 +40,7 @@ instructions_menu :-
     skip_line,
     main_menu.
 
+% select_game_variant(-GameVariant)
 % Selects the game variant and saves it for later use
 select_game_variant(GameVariant) :-
   nl, write('=== Game Variant Selection ==='), nl,
@@ -47,6 +51,7 @@ select_game_variant(GameVariant) :-
   read_input_number(GameOption),
   handle_game_variant_input(GameOption, GameVariant).
 
+% handle_game_variant_input(+GameOption, -GameVariant)
 handle_game_variant_input(1, default) :-
   nl, write('Default variant selected.'), nl.
 handle_game_variant_input(2, medium_churn) :-
@@ -57,17 +62,31 @@ handle_game_variant_input(_, GameVariant) :-
   write('Invalid option. Try again.'), nl,
   select_game_variant(GameVariant).
 
-% Displays the game menu
-game_menu :-
-    write('Select the mode you want to play:'), nl,
-    write('1. Player vs Player'), nl,
-    write('2. Player vs Computer'), nl,
-    write('3. Computer vs Computer'), nl,
-    write('4. Return to main menu'), nl,
-    write('Please select an option: '),
-    read_input_number(GameOption),
-    handle_game_menu_input(GameOption).
+% select_board_size(-BoardSize)
+select_board_size(BoardSize) :-
+    nl, write('=== Board Size Selection ==='), nl,
+    write('1. 6x6'), nl,
+    write('2. 8x8'), nl,
+    write('3. 10x10'), nl,
+    write('Please select a board size (1-3): '),
+    read_input_number(BoardSizeOption),
+    handle_board_size_input(BoardSizeOption, BoardSize).
 
+% handle_board_size_input(+BoardSizeOption, -BoardSize)
+handle_board_size_input(1, 6) :-
+    nl, write('6x6 board selected.'), nl.
+
+handle_board_size_input(2, 8) :-
+    nl, write('8x8 board selected.'), nl.
+
+handle_board_size_input(3, 10) :-
+    nl, write('10x10 board selected.'), nl.
+
+handle_board_size_input(_, BoardSize) :-
+    write('Invalid option. Try again.'), nl,
+    select_board_size(BoardSize).
+
+% select_computer_difficulty(-Difficulty)
 select_computer_difficulty(Difficulty) :-
     nl, write('=== Computer Difficulty Selection ==='), nl,
     write('1. Random'), nl,
@@ -76,6 +95,7 @@ select_computer_difficulty(Difficulty) :-
     read_input_number(DifficultyOption),
     handle_computer_difficulty_input(DifficultyOption, Difficulty).
 
+% handle_computer_difficulty_input(+DifficultyOption, -Difficulty)
 handle_computer_difficulty_input(1, random) :-
     nl, write('Random difficulty selected.'), nl.
 
@@ -86,28 +106,53 @@ handle_computer_difficulty_input(_, Difficulty) :-
     write('Invalid option. Try again.'), nl,
     select_computer_difficulty(Difficulty).
 
+% game_menu/0
+% Displays the game menu
+game_menu :-
+    write('Select the mode you want to play:'), nl,
+    write('1. Player vs Player'), nl,
+    write('2. Player vs Computer'), nl,
+    write('3. Computer vs Player'), nl,
+    write('4. Computer vs Computer'), nl,
+    write('5. Return to main menu'), nl,
+    write('Please select an option: '),
+    read_input_number(GameOption),
+    handle_game_menu_input(GameOption).
+
+% handle_game_menu_input(+GameOption)
 % Handles the input of the game menu
 handle_game_menu_input(1) :-
+    select_board_size(BoardSize),
     select_game_variant(GameVariant),
     nl, write('Starting Player vs Player game...'), nl,
-    initial_state(GameState),
+    initial_state(BoardSize, GameState),
     game_loop(GameState, GameVariant).
 
 handle_game_menu_input(2) :-
+    select_board_size(BoardSize),
     select_computer_difficulty(Difficulty),
     select_game_variant(GameVariant),
     nl, write('Starting Player vs Computer game...'), nl,
-    initial_state(GameState),
-    game_loop_player_pc(GameState, GameVariant, Difficulty).
+    initial_state(BoardSize, GameState),
+    game_loop_player_pc(GameState, GameVariant, Difficulty, player_first).
 
 handle_game_menu_input(3) :-
+    select_board_size(BoardSize),
+    select_computer_difficulty(Difficulty),
+    select_game_variant(GameVariant),
+    nl, write('Starting Computer vs Player game...'), nl,
+    initial_state(BoardSize, GameState),
+    game_loop_player_pc(GameState, GameVariant, Difficulty, pc_first).
+
+handle_game_menu_input(4) :-
+    select_board_size(BoardSize),
     select_computer_difficulty(Difficulty),
     select_game_variant(GameVariant),
     nl, write('Starting Computer vs Computer game...'), nl,
-    initial_state(GameState),
+    initial_state(BoardSize, GameState),
     game_loop_pc_pc(GameState, GameVariant, Difficulty).
 
-handle_game_menu_input(4) :-
+handle_game_menu_input(5) :-
     nl, write('Returning to main menu...'), nl,
     main_menu.
 

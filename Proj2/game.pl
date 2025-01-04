@@ -6,6 +6,7 @@
 :- consult('utils.pl').
 :- consult('logic.pl').
 
+% play/0
 play :- 
     nl, display_name, 
     main_menu.
