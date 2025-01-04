@@ -12,7 +12,6 @@ display_game([Board, Player]) :-
     display_board(Board, 0).
 
 % board(+Size, -Board)
-% Initial boards
 board(6, [
     [empty, red, empty, red, empty, empty],
     [empty, empty, empty, empty, empty, blue],
@@ -68,7 +67,7 @@ print_numbers(Current, Max) :-
     Current > Max, nl.
 print_numbers(Current, Max) :-
     Current =< Max,
-    write(' '), write(Current), write(' '),
+    format(' ~w ', [Current]),
     NextNum is Current + 1,
     print_numbers(NextNum, Max).
 
@@ -91,9 +90,9 @@ display_rows([], _, _).
 display_rows([Row|Rest], RowIndex, NumRows) :-
     ReverseRowIndex is NumRows - RowIndex,
     ReverseRowIndex > 0,
-    write(' '), write(ReverseRowIndex), write(' |'),
+    format('~|~t~w~2+ |', [ReverseRowIndex]),
     display_row(Row),
-    write('| '), write(ReverseRowIndex), nl,
+    format('| ~|~t~w~2+', [ReverseRowIndex]), nl,
     display_rows(Rest, RowIndex + 1, NumRows).
 
 % display_row(+Row)

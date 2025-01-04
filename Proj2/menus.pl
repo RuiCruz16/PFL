@@ -146,11 +146,14 @@ handle_game_menu_input(3) :-
 
 handle_game_menu_input(4) :-
     select_board_size(BoardSize),
-    select_computer_difficulty(Difficulty),
+    nl, write('Select the difficulty for the red side computer:'), nl,
+    select_computer_difficulty(DifficultyPC1),
+    nl, write('Select the difficulty for the blue side computer:'), nl,
+    select_computer_difficulty(DifficultyPC2),
     select_game_variant(GameVariant),
     nl, write('Starting Computer vs Computer game...'), nl,
     initial_state(BoardSize, GameState),
-    game_loop_pc_pc(GameState, GameVariant, Difficulty).
+    game_loop_pc_pc(GameState, GameVariant, [DifficultyPC1, DifficultyPC2]).
 
 handle_game_menu_input(5) :-
     nl, write('Returning to main menu...'), nl,

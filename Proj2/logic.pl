@@ -4,6 +4,9 @@ player(blue, player2).
 switch_player(red, blue).
 switch_player(blue, red).
 
+select_difficulty(red, [DifficultyPC1, _], DifficultyPC1).
+select_difficulty(blue, [_, DifficultyPC2], DifficultyPC2).
+
 % initial_state(+GameConfig, -GameState)
 initial_state(BoardSize, [Board, red]) :-
     board(BoardSize, Board).
@@ -66,7 +69,7 @@ game_loop_player_pc([Board, Player], GameVariant, Difficulty, pc_first) :-
     nl, write('Player ('), write(NewPlayer), write(') moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     game_loop_player_pc([FinalBoard, FinalPlayer], GameVariant, Difficulty, pc_first).
 
-% game_loop_pc_pc(+GameState, +GameVariant, +Difficulty)
+% game_loop_pc_pc(+GameState, +GameVariant, +Difficulties)
 game_loop_pc_pc([Board, Player], _, _) :-
     game_over([Board, Player], draw),
     nl, write('Game over! It\'s a draw!'), nl.
@@ -75,12 +78,13 @@ game_loop_pc_pc([Board, Player], _, _) :-
     game_over([Board, Player], Winner),
     nl, format('Game over! The winner is ~w!~n', [Winner]).
 
-game_loop_pc_pc([Board, Player], GameVariant, Difficulty) :-
+game_loop_pc_pc([Board, Player], GameVariant, [DifficultyPC1, DifficultyPC2]) :-
     \+ game_over([Board, Player], _),
     display_game([Board, Player]),
     approve_input(Player),
+    select_difficulty(Player, [DifficultyPC1, DifficultyPC2], Difficulty),
     perform_computer_move([Board, Player], GameVariant, Difficulty, [NewBoard, NewPlayer]),
-    game_loop_pc_pc([NewBoard, NewPlayer], GameVariant, Difficulty).
+    game_loop_pc_pc([NewBoard, NewPlayer], GameVariant, [DifficultyPC1, DifficultyPC2]).
 
 % approve_input(+Player)
 approve_input(Player) :-
