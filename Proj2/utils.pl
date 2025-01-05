@@ -1,4 +1,4 @@
-% read_input_number(-X, +Acc)
+% read_input_number(-X)
 % Function to read a number from the input
 read_input_number(X) :- read_input_number(X,0).
 

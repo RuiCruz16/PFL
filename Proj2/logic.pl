@@ -17,14 +17,16 @@ initial_state(BoardSize, [Board, red]) :-
     board(BoardSize, Board).
 
 % game_loop(+GameState, +GameVariant)
-% Main game loop of the Player vs Player game mode, taking into account the game variant
+% Main game loop of the Player vs Player game mode, taking into account the game variant chosen previously
 game_loop([Board, Player], _) :-
     game_over([Board, Player], draw),
-    nl, write('Game over! It\'s a draw!'), nl.
+    nl, write('Game over! It\'s a draw!'), nl,
+    !, nl, main_menu.
 
 game_loop([Board, Player], _) :-
     game_over([Board, Player], Winner),
-    nl, format('Game over! The winner is ~w!~n', [Winner]).
+    nl, format('Game over! The winner is ~w!~n', [Winner]),
+    !, nl, main_menu.
 
 game_loop([Board, Player], GameVariant) :-
     \+ game_over([Board, Player], _),
@@ -39,14 +41,17 @@ game_loop([Board, Player], GameVariant) :-
     game_loop([FinalBoard, NewPlayer], GameVariant).
 
 % game_loop_player_pc(+GameState, +GameVariant, +Difficulty, +FirstPlayer)
-% Main game loop of the Player vs Computer game mode, taking into account the game variant, the difficulty chosen to the computer player and the first player to play
+% Main game loop of the Player vs Computer game mode, taking into account the game variant, 
+% the difficulty chosen to the computer player and the first player to make a move
 game_loop_player_pc([Board, Player], _, _, _) :-
     game_over([Board, Player], draw),
-    nl, write('Game over! It\'s a draw!'), nl.
+    nl, write('Game over! It\'s a draw!'), nl,
+    !, nl, main_menu.
 
 game_loop_player_pc([Board, Player], _, _, _) :-
     game_over([Board, Player], Winner),
-    nl, format('Game over! The winner is ~w!~n', [Winner]).
+    nl, format('Game over! The winner is ~w!~n', [Winner]),
+    !, nl, main_menu.
 
 game_loop_player_pc([Board, Player], GameVariant, Difficulty, player_first) :- 
     \+ game_over([Board, Player], _),
@@ -78,14 +83,16 @@ game_loop_player_pc([Board, Player], GameVariant, Difficulty, pc_first) :-
 
 % game_loop_pc_pc(+GameState, +GameVariant, +Difficulties)
 % Main game loop of the Computer vs Computer game mode, taking into account the game variant 
-% and the difficulties chosen to the computer players (there can be different difficulties for each player)
+% and the difficulties chosen to the computer players (there can be different difficulties for each computer)
 game_loop_pc_pc([Board, Player], _, _) :-
     game_over([Board, Player], draw),
-    nl, write('Game over! It\'s a draw!'), nl.
+    nl, write('Game over! It\'s a draw!'), nl,
+    !, nl, main_menu.
 
 game_loop_pc_pc([Board, Player], _, _) :-
     game_over([Board, Player], Winner),
-    nl, format('Game over! The winner is ~w!~n', [Winner]).
+    nl, format('Game over! The winner is ~w!~n', [Winner]),
+    !, nl, main_menu.
 
 game_loop_pc_pc([Board, Player], GameVariant, [DifficultyPC1, DifficultyPC2]) :-
     \+ game_over([Board, Player], _),
@@ -114,8 +121,8 @@ perform_computer_move([Board, Player], GameVariant, Difficulty, [NewBoard, NewPl
 % choose_move(+GameState, +Difficulty, -Move)
 % Predicate to choose the next move of the computer based on the current game state and the chosen difficulty level
 % In the case of the greedy difficulty, the computer will simulate all the available moves and choose the one that has the lowest value,
-% because the value is calculated based on the number of moves, directions that the opponent can make and the number of moves that the computer can make,
-% a lower value means that the computer was able to reduce the opponent's moves and directions and increase its own moves
+% because the value is calculated based on the number of moves and directions that the opponent can make and the number of moves that the computer can make,
+% a lower value means that the computer was able to reduce the opponent's moves and directions and at the same time increase its own moves
 % In the case of the random difficulty, the computer will choose a random piece to move and a random position to move to
 choose_move([Board, Player], greedy, [ChosenPosition, NewPosition]) :-
     findall(
@@ -156,15 +163,20 @@ find_piece(Board, Player, (X, Y)) :-
     nth0(ColIndex, Row, Player).
 
 % simulate_move(+GameState, +ChosenPosition, +NewPosition, -Value)
-% Predicate to simulate a move taking into account the chosen position and the new position, returning the value of the move
+% Predicate to simulate a move taking into account the chosen position and the new position, returning the value related to the move
 simulate_move([Board, Player], ChosenPosition, NewPosition, Value) :-
     move([Board, Player], [ChosenPosition, NewPosition], [TempBoard, Opponent]),
     value([TempBoard, Player], Opponent, Value).
 
 % value(+GameState, +Player, -Value)
-% Predicate to calculate the value of a move based on the current game state.
-% This is used to evaluate the value of the move previously simulated by the bot
-% to determine the best possible move
+% Predicate to calculate the value of a move based on the given game state.
+% This is used to evaluate the value of the move previously simulated by the bot to determine the best possible move
+% To calculate the value of a move, the predicate takes into account the number of moves and directions that the opponent can make 
+% and the number of moves that the computer can make, using weights to determine the importance of each factor
+% Is prioritized the reduction of the opponent's moves, given the highest weight to it, followed by the reduction of the opponent's directions
+% To improve the computer moves in later stages of the game, the number of moves that the computer can make is also taken into account, but with a lower weight
+% This works because, in the final stages of the game, there are fewer opportunities to significantly reduce the opponent's moves and directions. 
+% As a result, the computer places greater emphasis on maximizing its own moves
 value([Board, Player], Opponent, Value) :-
     count_player_moves(Board, Opponent, OpponentMoves),
     count_player_moves(Board, Player, ComputerMoves),
@@ -249,7 +261,7 @@ choose_piece([Board, Player], Coords) :-
     validate_coordinates(X, Y, BoardSize, [Board, Player], Coords).
 
 % validate_coordinates(+X, +Y, +BoardSize, +GameState, -Coords)
-% Predicate to validate if the coordinates chosen by the user are within the bounds of the board
+% Predicate to validate if the coordinates chosen by the user are within the bounds of the board and if the piece belongs to the player
 validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
     (X > 0, X =< BoardSize, Y > 0, Y =< BoardSize),
     RowIndex is BoardSize - Y,
@@ -294,14 +306,16 @@ valid_moves([Board, Player], (X, Y), ListOfMoves) :-
     ).
 
 % valid_move(+GameState, +RowIndex, +ColIndex, -NX, -NY)
-% Predicate to determine all valid moves for a piece in every possible direction
+% Predicate to determine a valid move for a piece starting at the given position
+% (RowIndex, ColIndex). It explores all possible directions and generates the 
+% coordinates of a valid destination (NX, NY)
 valid_move([Board, _], RowIndex, ColIndex, NX, NY) :-
     length(Board, BoardSize),
     direction(DX, DY),
     generate_moves(RowIndex, ColIndex, DX, DY, Board, BoardSize, NX, NY).
 
 % direction(+DX, +DY)
-% Predicate to determine all the possible directions that a piece can move
+% Predicate with all the possible directions that a piece can move
 direction(-1, 0).
 direction(1, 0).
 direction(0, -1).
@@ -358,7 +372,7 @@ validate_new_position(X, Y, ListOfMoves, NewCoords) :-
     write('Invalid move. The selected coordinates are not in the list of valid moves. Please try again.'), nl,
     nl, choose_new_position(ListOfMoves, NewCoords).
 
-% move(+GameState, +PieceCoords, +NewCoords, -NewGameState)
+% move(+GameState, +Move, -NewGameState)
 % Predicate to move a piece from the given coordinates to the new coordinates and update the game state accordingly
 move([Board, Player], [(X, Y), (NX, NY)], [NewBoard, NewPlayer]) :-
     length(Board, BoardSize),
@@ -488,7 +502,7 @@ handle_high_churn(Board, BlockedPieces, FinalBoard, BoardSize) :-
     update_board(TempBoard, AllBlackPieces, FinalBoard).
 
 % update_board(+Board, +Pieces, -NewBoard)
-% Predicate to update the board by removing the specified pieces and replacing them with empty pieces
+% Predicate to update the board by replacing the specified pieces with empty ones
 update_board(Board, [], Board).
 update_board(Board, [(X, Y) | T], NewBoard) :-
     length(Board, BoardSize),

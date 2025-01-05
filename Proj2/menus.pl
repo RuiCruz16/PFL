@@ -1,6 +1,7 @@
 % main_menu/0
 % Displays the main menu of the game
-main_menu :- 
+main_menu :-
+    write('=== Main Menu ==='), nl,
     write('1. Start Game'), nl,
     write('2. Instructions'), nl,
     write('3. Exit'), nl,
@@ -17,7 +18,7 @@ handle_main_menu_input(2) :-
     nl, instructions_menu.
 
 handle_main_menu_input(3) :-
-    nl, write('Exiting game...'), !.
+    nl, write('Exiting game...'), nl, !, abort.
 
 handle_main_menu_input(_) :-
     nl, write('Invalid option, try again.'), nl,
@@ -38,10 +39,10 @@ instructions_menu :-
     nl,
     write('Press any key to return to the main menu.'), nl,
     skip_line,
-    main_menu.
+    nl, main_menu.
 
 % select_game_variant(-GameVariant)
-% Selects the game variant and saves it for later use
+% Displays the game variant selection menu to help the user choose the game variant
 select_game_variant(GameVariant) :-
   nl, write('=== Game Variant Selection ==='), nl,
   write('1. Default -> Play with the default rules of the game.'), nl,
@@ -52,7 +53,7 @@ select_game_variant(GameVariant) :-
   handle_game_variant_input(GameOption, GameVariant).
 
 % handle_game_variant_input(+GameOption, -GameVariant)
-% Handles the input of the game variant
+% Handles the input of the game variant menu
 handle_game_variant_input(1, default) :-
   nl, write('Default variant selected.'), nl.
 handle_game_variant_input(2, medium_churn) :-
@@ -64,7 +65,7 @@ handle_game_variant_input(_, GameVariant) :-
   select_game_variant(GameVariant).
 
 % select_board_size(-BoardSize)
-% Selects the board size and saves it for later use
+% Displays the board size selection menu to help the user choose the board size
 select_board_size(BoardSize) :-
     nl, write('=== Board Size Selection ==='), nl,
     write('1. 6x6'), nl,
@@ -75,7 +76,7 @@ select_board_size(BoardSize) :-
     handle_board_size_input(BoardSizeOption, BoardSize).
 
 % handle_board_size_input(+BoardSizeOption, -BoardSize)
-% Handles the input of the board size
+% Handles the input of the board size menu
 handle_board_size_input(1, 6) :-
     nl, write('6x6 board selected.'), nl.
 
@@ -90,7 +91,7 @@ handle_board_size_input(_, BoardSize) :-
     select_board_size(BoardSize).
 
 % select_computer_difficulty(-Difficulty)
-% Selects the computer difficulty and saves it for later use
+% Displays the computer difficulty selection menu to help the user choose the computer difficulty
 select_computer_difficulty(Difficulty) :-
     nl, write('=== Computer Difficulty Selection ==='), nl,
     write('1. Random'), nl,
@@ -100,7 +101,7 @@ select_computer_difficulty(Difficulty) :-
     handle_computer_difficulty_input(DifficultyOption, Difficulty).
 
 % handle_computer_difficulty_input(+DifficultyOption, -Difficulty)
-% Handles the input of the computer difficulty
+% Handles the input of the computer difficulty menu
 handle_computer_difficulty_input(1, random) :-
     nl, write('Random difficulty selected.'), nl.
 

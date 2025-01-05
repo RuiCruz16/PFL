@@ -47,7 +47,7 @@ board(10, [
 ]).
 
 % display_board(+Board, +Index)
-% Displays the current board
+% Displays the given board
 display_board(Board, Index) :-
     Board = [FirstRow|_],
     length(Board, NumRows),
