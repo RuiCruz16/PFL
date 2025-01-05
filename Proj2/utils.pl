@@ -19,14 +19,6 @@ aux_between(Low, High, Value) :-
     Next is Low + 1,
     aux_between(Next, High, Value).
 
-% nthX(+List, +Index, -Value)
-% Returns the element at the Index position of the List
-nthX([Head|_], 0, Head).
-nthX([_|Tail], Index, Value) :-
-    Index > 0,
-    NextIndex is Index - 1,
-    nthX(Tail, NextIndex, Value).
-
 % aux_sumlist(+List, -Sum)
 % Auxiliary function to calculate the sum of the elements of a list
 aux_sumlist([], 0).

@@ -33,7 +33,7 @@ game_loop([Board, Player], GameVariant) :-
     valid_moves([Board, Player], PieceCoords, ListOfMoves),
     format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
     nl, choose_new_position(ListOfMoves, NewCoords),
-    move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
+    move([Board, Player], [PieceCoords, NewCoords], [NewBoard, NewPlayer]),
     check_blocked_pieces(NewBoard, GameVariant, FinalBoard),
     nl, write('Player '), write(Player), write(' moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     game_loop([FinalBoard, NewPlayer], GameVariant).
@@ -55,7 +55,7 @@ game_loop_player_pc([Board, Player], GameVariant, Difficulty, player_first) :-
     valid_moves([Board, Player], PieceCoords, ListOfMoves),
     format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
     nl, choose_new_position(ListOfMoves, NewCoords),
-    move([Board, Player], PieceCoords, NewCoords, [NewBoard, NewPlayer]),
+    move([Board, Player], [PieceCoords, NewCoords], [NewBoard, NewPlayer]),
     check_blocked_pieces(NewBoard, GameVariant, TempBoard),
     nl, write('Player ('), write(Player), write(') moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     display_game([TempBoard, NewPlayer]), nl, 
@@ -71,7 +71,7 @@ game_loop_player_pc([Board, Player], GameVariant, Difficulty, pc_first) :-
     valid_moves([NewBoard, NewPlayer], PieceCoords, ListOfMoves),
     format("Valid moves for selected piece: ~w~n", [ListOfMoves]),
     nl, choose_new_position(ListOfMoves, NewCoords),
-    move([NewBoard, NewPlayer], PieceCoords, NewCoords, [TempBoard, FinalPlayer]),
+    move([NewBoard, NewPlayer], [PieceCoords, NewCoords], [TempBoard, FinalPlayer]),
     check_blocked_pieces(TempBoard, GameVariant, FinalBoard),
     nl, write('Player ('), write(NewPlayer), write(') moved from ('), write(PieceCoords), write(') to ('), write(NewCoords), write(')'), nl,
     game_loop_player_pc([FinalBoard, FinalPlayer], GameVariant, Difficulty, pc_first).
@@ -108,7 +108,7 @@ approve_input(Player) :-
 % The resulting move should be applied to the GameState, updating it accordingly
 perform_computer_move([Board, Player], GameVariant, Difficulty, [NewBoard, NewPlayer]) :-
     choose_move([Board, Player], Difficulty, [ChosenPosition, NewPosition]),
-    move([Board, Player], ChosenPosition, NewPosition, [TempBoard, NewPlayer]),
+    move([Board, Player], [ChosenPosition, NewPosition], [TempBoard, NewPlayer]),
     check_blocked_pieces(TempBoard, GameVariant, NewBoard).
 
 % choose_move(+GameState, +Difficulty, -Move)
@@ -152,13 +152,13 @@ find_piece(Board, Player, (X, Y)) :-
     aux_between(1, BoardSize, Y),
     RowIndex is BoardSize - Y,
     ColIndex is X - 1,
-    nthX(Board, RowIndex, Row),
-    nthX(Row, ColIndex, Player).
+    nth0(RowIndex, Board, Row),
+    nth0(ColIndex, Row, Player).
 
 % simulate_move(+GameState, +ChosenPosition, +NewPosition, -Value)
 % Predicate to simulate a move taking into account the chosen position and the new position, returning the value of the move
 simulate_move([Board, Player], ChosenPosition, NewPosition, Value) :-
-    move([Board, Player], ChosenPosition, NewPosition, [TempBoard, Opponent]),
+    move([Board, Player], [ChosenPosition, NewPosition], [TempBoard, Opponent]),
     value([TempBoard, Player], Opponent, Value).
 
 % value(+GameState, +Player, -Value)
@@ -217,9 +217,9 @@ count_piece_directions(Board, (X, Y), DirectionsCount) :-
             NRow is X + DX,
             NCol is Y + DY,
             within_bounds(NRow, NCol, BoardSize),
-            nthX(Board, NRow, Row),
-            nthX(Row, NCol, Cell),
-            Cell = empty
+            nth0(NRow, Board, Row),
+            nth0(NCol, Row, Piece),
+            Piece = empty
         ),
         Directions
     ),
@@ -230,7 +230,7 @@ count_piece_directions(Board, (X, Y), DirectionsCount) :-
 % The best move is the one with the lowest value
 select_best_move(MoveValues, BestMove) :-
     sort_moves(MoveValues, SortedMoves),
-    nthX(SortedMoves, 0, BestMove).
+    nth0(0, SortedMoves, BestMove).
 
 % sort_moves(+MoveValues, -SortedMoves)
 % Predicate to sort the moves based on the value of each move in ascending order
@@ -254,8 +254,8 @@ validate_coordinates(X, Y, BoardSize, [Board, Player], Coords) :-
     (X > 0, X =< BoardSize, Y > 0, Y =< BoardSize),
     RowIndex is BoardSize - Y,
     ColIndex is X - 1,
-    nthX(Board, RowIndex, Row),
-    nthX(Row, ColIndex, Piece),
+    nth0(RowIndex, Board, Row),
+    nth0(ColIndex, Row, Piece),
     validate_piece(RowIndex, ColIndex, Piece, Player, BoardSize, [Board, Player], Coords).
 
 validate_coordinates(_, _, _, [Board, Player], Coords) :-
@@ -317,8 +317,8 @@ generate_moves(Row, Col, DX, DY, Board, BoardSize, NX, NY) :-
     NRow is Row + DX,
     NCol is Col + DY,
     within_bounds(NRow, NCol, BoardSize),
-    nthX(Board, NRow, RowList),
-    nthX(RowList, NCol, Piece),
+    nth0(NRow, Board, RowList),
+    nth0(NCol, RowList, Piece),
     Piece = empty,
     NX is NCol + 1,
     NY is BoardSize - NRow.
@@ -327,8 +327,8 @@ generate_moves(Row, Col, DX, DY, Board, BoardSize, NX, NY) :-
     NRow is Row + DX,
     NCol is Col + DY,
     within_bounds(NRow, NCol, BoardSize),
-    nthX(Board, NRow, RowList),
-    nthX(RowList, NCol, Piece),
+    nth0(NRow, Board, RowList),
+    nth0(NCol, RowList, Piece),
     Piece = empty,
     generate_moves(NRow, NCol, DX, DY, Board, BoardSize, NX, NY).
 
@@ -360,14 +360,14 @@ validate_new_position(X, Y, ListOfMoves, NewCoords) :-
 
 % move(+GameState, +PieceCoords, +NewCoords, -NewGameState)
 % Predicate to move a piece from the given coordinates to the new coordinates and update the game state accordingly
-move([Board, Player], (X, Y), (NX, NY), [NewBoard, NewPlayer]) :-
+move([Board, Player], [(X, Y), (NX, NY)], [NewBoard, NewPlayer]) :-
     length(Board, BoardSize),
     RowIndex is BoardSize - Y,
     ColIndex is X - 1,
     NRowIndex is BoardSize - NY,
     NColIndex is NX - 1,
-    nthX(Board, RowIndex, Row),
-    nthX(Row, ColIndex, Piece),
+    nth0(RowIndex, Board, Row),
+    nth0(ColIndex, Row, Piece),
     replace(Board, RowIndex, ColIndex, black, TempBoard),
     replace(TempBoard, NRowIndex, NColIndex, Piece, NewBoard),
     switch_player(Player, NewPlayer).
@@ -403,8 +403,8 @@ check_blocked_pieces(Board, default, FinalBoard) :-
             aux_between(1, BoardSize, Y),
             RowIndex is BoardSize - Y,
             ColIndex is X - 1,
-            nthX(Board, RowIndex, Row),
-            nthX(Row, ColIndex, Piece),
+            nth0(RowIndex, Board, Row),
+            nth0(ColIndex, Row, Piece),
             Piece \= black,
             Piece \= empty,
             valid_moves([Board, Piece], (X, Y), [])
@@ -418,15 +418,15 @@ check_blocked_pieces(Board, medium_churn, FinalBoard) :-
     findall(
       (X, Y),
       (
-      aux_between(1, BoardSize, X),
-      aux_between(1, BoardSize, Y),
-      RowIndex is BoardSize - Y,
-      ColIndex is X - 1,
-      nthX(Board, RowIndex, Row),
-      nthX(Row, ColIndex, Piece),
-      Piece \= black,
-      Piece \= empty,
-      valid_moves([Board, Piece], (X, Y), [])
+            aux_between(1, BoardSize, X),
+            aux_between(1, BoardSize, Y),
+            RowIndex is BoardSize - Y,
+            ColIndex is X - 1,
+            nth0(RowIndex, Board, Row),
+            nth0(ColIndex, Row, Piece),
+            Piece \= black,
+            Piece \= empty,
+            valid_moves([Board, Piece], (X, Y), [])
       ),
       BlockedPieces
     ),
@@ -434,15 +434,15 @@ check_blocked_pieces(Board, medium_churn, FinalBoard) :-
     findall(
       (BX, BY),
       (
-      member((X, Y), BlockedPieces),
-      direction(DX, DY),
-      BX is X + DX,
-      BY is Y + DY,
-      within_bounds(BoardSize - BY, BX - 1, BoardSize),
-      RowIndex is BoardSize - BY,
-      ColIndex is BX - 1,
-      nthX(TempBoard, RowIndex, Row),
-      nthX(Row, ColIndex, black)
+            member((X, Y), BlockedPieces),
+            direction(DX, DY),
+            BX is X + DX,
+            BY is Y + DY,
+            within_bounds(BoardSize - BY, BX - 1, BoardSize),
+            RowIndex is BoardSize - BY,
+            ColIndex is BX - 1,
+            nth0(RowIndex, TempBoard, Row),
+            nth0(ColIndex, Row, black)
       ),
       AdjacentBlackPieces
     ),
@@ -457,8 +457,8 @@ check_blocked_pieces(Board, high_churn, FinalBoard) :-
             aux_between(1, BoardSize, Y),
             RowIndex is BoardSize - Y,
             ColIndex is X - 1,
-            nthX(Board, RowIndex, Row),
-            nthX(Row, ColIndex, Piece),
+            nth0(RowIndex, Board, Row),
+            nth0(ColIndex, Row, Piece),
             Piece \= black,
             Piece \= empty,
             valid_moves([Board, Piece], (X, Y), [])
@@ -480,8 +480,8 @@ handle_high_churn(Board, BlockedPieces, FinalBoard, BoardSize) :-
             aux_between(1, BoardSize, BY),
             RowIndex is BoardSize - BY,
             ColIndex is BX - 1,
-            nthX(TempBoard, RowIndex, Row),
-            nthX(Row, ColIndex, black)
+            nth0(RowIndex, TempBoard, Row),
+            nth0(ColIndex, Row, black)
         ),
         AllBlackPieces
     ),
